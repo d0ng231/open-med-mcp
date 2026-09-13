@@ -71,7 +71,7 @@ def fake_models(isolated_settings):
             import json, sys
             from pathlib import Path
             sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-            sys.path.insert(0, "%s")
+            sys.path.insert(0, "__SDK_DIR__")
             import omm_job
             def run(job):
                 out = job.output_path("predictions.json")
@@ -80,7 +80,8 @@ def fake_models(isolated_settings):
             if __name__ == "__main__":
                 omm_job.main(run)
             """
-            % str(get_registry(isolated_settings).get("classical").adapter_dir.parent / "_sdk")
+        ).replace(
+            "__SDK_DIR__", str(get_registry(isolated_settings).get("classical").adapter_dir.parent / "_sdk")
         )
     )
     return get_registry(isolated_settings, reload=True)
