@@ -1,0 +1,16 @@
+cff-version: 1.2.0
+message: "If you use open-med-mcp in your research, please cite it as below."
+title: "open-med-mcp: an open, modular MCP server for medical image analysis agents"
+type: software
+version: 0.1.0
+date-released: 2026-09-13
+license: Apache-2.0
+repository-code: "https://github.com/d0ng231/open-med-mcp"
+authors:
+  - name: "open-med-mcp contributors"
+keywords:
+  - model context protocol
+  - medical imaging
+  - segmentation
+  - segment anything
+  - agents

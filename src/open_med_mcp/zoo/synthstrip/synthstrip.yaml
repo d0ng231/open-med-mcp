@@ -1,0 +1,37 @@
+name: synthstrip
+display_name: SynthStrip (FreeSurfer skull stripping, Hoopes et al.)
+description: >-
+  Contrast-agnostic skull stripping from FreeSurfer, run through the official
+  freesurfer/synthstrip container (no Python dependencies). Works on T1/T2/FLAIR/PD MRI, CT,
+  PET and infant scans. Produces a brain mask and a stripped image. Runs on CPU in about a minute.
+version: "1.8"
+category: preprocessing
+tasks: [strip]
+default_task: strip
+modalities: [MR, CT, PET]
+dims: [3]
+prompt_types: []
+inputs:
+  image: {kind: image, required: true, description: "3D head image as NIfTI"}
+outputs:
+  mask: {kind: mask, file: outputs/mask.nii.gz, description: "Binary brain mask"}
+  brain: {kind: image, file: outputs/brain.nii.gz, description: "Skull-stripped image"}
+labels: {1: brain}
+params:
+  no_csf: {type: boolean, default: false, description: "Exclude CSF from the mask (tighter brain boundary)"}
+  border: {type: integer, description: "Mask border threshold in mm (default 1; larger = more generous mask)"}
+  threads: {type: integer, default: 4, description: "CPU threads"}
+container:
+  mode: wrapped
+  image: freesurfer/synthstrip:1.8
+  gpu_image: freesurfer/synthstrip:1.8-gpu
+  gpu: preferred
+  command: ["mri_synthstrip", "-i", "{inputs.image}", "-o", "{outputs.brain}", "-m", "{outputs.mask}", "{flag:no_csf:--no-csf}", "{opt:border:-b}", "{opt:threads:-t}"]
+local:
+  command: ["mri_synthstrip", "-i", "{inputs.image}", "-o", "{outputs.brain}", "-m", "{outputs.mask}", "{flag:no_csf:--no-csf}", "{opt:border:-b}", "{opt:threads:-t}"]
+runners: [docker, apptainer, local]
+license: FreeSurfer software license (free for research); see https://surfer.nmr.mgh.harvard.edu/fswiki/FreeSurferSoftwareLicense
+homepage: https://surfer.nmr.mgh.harvard.edu/docs/synthstrip/
+citation: "Hoopes et al., SynthStrip: skull-stripping for any brain image, NeuroImage (2022)"
+notes: "Uses the upstream image directly (docker pull freesurfer/synthstrip:1.8 or open-med-mcp models pull synthstrip --engine apptainer). The local runner is used when FreeSurfer's mri_synthstrip is on PATH."
+tags: [automatic, mri, ct, brain, skull-stripping, preprocessing, wrapped-image, cpu]

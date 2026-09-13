@@ -1,0 +1,50 @@
+name: medsam2
+adapter: sam2
+display_name: MedSAM2 (SAM 2.1 fine-tuned on 3D medical images and videos)
+description: >-
+  MedSAM2 (Ma et al., 2025) is SAM 2.1-tiny fine-tuned at 512 px on 455k 3D image-mask pairs and
+  76k video frames across CT, MRI, PET, ultrasound and endoscopy. Prompt with a box (recommended)
+  or points on one slice; the mask is propagated through the volume. Task-specific checkpoints
+  are available via `variant` (CT lesion, MRI liver lesion, ultrasound heart).
+version: "0.1"
+tasks: [segment]
+modalities: [CT, MR, PET, US, endoscopy, any]
+dims: [2, 3]
+prompt_types: [point, box]
+inputs:
+  image: {kind: image, required: true, description: "2D image or 3D volume"}
+outputs:
+  mask: {kind: mask, description: "Label map; label = object_id of the prompts"}
+params:
+  variant:
+    type: string
+    default: medsam2_latest
+    choices: [medsam2_latest, medsam2_ct_lesion, medsam2_mri_liver_lesion, medsam2_us_heart, medsam2_2411, sam2.1_hiera_tiny, sam2.1_hiera_small, sam2.1_hiera_base_plus, sam2.1_hiera_large]
+    description: "Checkpoint to use"
+  prompts: {type: array, items: object, description: "Wire-format prompts (filled in by the `segment` tool)"}
+  axis: {type: integer, default: 0, description: "NumPy axis to propagate along (filled in by the server from `plane`)"}
+  window: {type: string, description: "Intensity window; default soft-tissue for CT, auto otherwise"}
+  propagate: {type: boolean, default: true}
+  max_slices: {type: integer, default: 0}
+  stop_after_empty: {type: integer, default: 3}
+  largest_component: {type: boolean, default: false}
+  fill_holes: {type: boolean, default: false}
+  multimask: {type: boolean, default: false}
+weights:
+  - {id: medsam2_latest, file: MedSAM2_latest.pt, url: "https://huggingface.co/wanglab/MedSAM2/resolve/main/MedSAM2_latest.pt", sha256: c92743b99f00d078bf32a3afcc38aaa9faf1c1692dffe3eaa7a90938c1991060, size_mb: 156, license: Apache-2.0}
+  - {id: medsam2_ct_lesion, file: MedSAM2_CTLesion.pt, url: "https://huggingface.co/wanglab/MedSAM2/resolve/main/MedSAM2_CTLesion.pt", size_mb: 156, license: Apache-2.0}
+  - {id: medsam2_mri_liver_lesion, file: MedSAM2_MRI_LiverLesion.pt, url: "https://huggingface.co/wanglab/MedSAM2/resolve/main/MedSAM2_MRI_LiverLesion.pt", size_mb: 156, license: Apache-2.0}
+  - {id: medsam2_us_heart, file: MedSAM2_US_Heart.pt, url: "https://huggingface.co/wanglab/MedSAM2/resolve/main/MedSAM2_US_Heart.pt", size_mb: 156, license: Apache-2.0}
+  - {id: medsam2_2411, file: MedSAM2_2411.pt, url: "https://huggingface.co/wanglab/MedSAM2/resolve/main/MedSAM2_2411.pt", size_mb: 156, license: Apache-2.0}
+container:
+  gpu: preferred
+  shm_size: 4g
+local:
+  entrypoint: run.py
+  requires: [torch, sam2, hydra]
+  extra: sam2
+runners: [local, docker, apptainer]
+license: Apache-2.0
+homepage: https://github.com/bowang-lab/MedSAM2
+citation: "Ma et al., MedSAM2: Segment Anything in 3D Medical Images and Videos, arXiv:2504.03600 (2025)"
+tags: [promptable, medical, foundation-model, points, boxes, 2d, 3d, gpu, ct, mri, pet, ultrasound]

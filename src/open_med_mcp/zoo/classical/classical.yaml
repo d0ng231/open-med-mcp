@@ -1,0 +1,40 @@
+name: classical
+display_name: Classical (threshold / Otsu / region growing)
+description: >-
+  Dependency-free baseline segmentation with intensity thresholds, Otsu thresholding, multi-range
+  labelling and seeded region growing. Runs on CPU in seconds. Useful for lungs/bone/air in CT,
+  for producing coarse masks that seed promptable models, and for CI.
+version: "0.1"
+tasks: [threshold, otsu, multi_threshold, region_grow]
+default_task: threshold
+task_descriptions:
+  threshold: "Binary mask of voxels with lower <= value <= upper (optionally keep the largest component or the component containing `seeds`)."
+  otsu: "Binary Otsu threshold (set `invert: true` to select the dark class)."
+  multi_threshold: "Multi-label mask from `ranges: [[lower, upper, label], ...]`."
+  region_grow: "Connected-threshold region growing from `seeds` (native x,y[,z] voxel coordinates) inside [lower, upper] or seed_mean +- tolerance."
+modalities: [any]
+dims: [2, 3]
+prompt_types: []
+inputs:
+  image: {kind: image, required: true, description: "Any 2D/3D image"}
+outputs:
+  mask: {kind: mask, description: "Label map (uint8) in the input geometry"}
+params:
+  lower: {type: number, description: "Lower intensity bound (inclusive)"}
+  upper: {type: number, description: "Upper intensity bound (inclusive)"}
+  ranges: {type: array, items: object, description: "multi_threshold: list of [lower, upper, label]"}
+  seeds: {type: array, items: object, description: "List of native voxel coordinates [x, y(, z)]"}
+  tolerance: {type: number, description: "region_grow: half-width around the seed mean intensity"}
+  keep: {type: string, default: all, choices: [all, largest, seeds], description: "Which connected components to keep"}
+  fill_holes: {type: boolean, default: false}
+  min_voxels: {type: integer, default: 0, description: "Drop components smaller than this"}
+  invert: {type: boolean, default: false, description: "otsu: select the darker class"}
+  smooth_sigma: {type: number, default: 0, description: "Gaussian pre-smoothing in voxels (0 = off)"}
+container:
+  gpu: none
+local:
+  entrypoint: run.py
+  requires: [numpy, scipy, SimpleITK]
+runners: [local, docker, apptainer]
+license: Apache-2.0
+tags: [baseline, cpu, threshold, region-growing, ct, mr]

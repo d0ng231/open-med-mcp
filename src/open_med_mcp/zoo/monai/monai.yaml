@@ -1,0 +1,40 @@
+name: monai
+display_name: MONAI Model Zoo bundle (segmentation)
+description: >-
+  Run a segmentation bundle from the MONAI Model Zoo (or a local bundle directory). Bundles are
+  downloaded on first use, e.g. spleen_ct_segmentation, pancreas_ct_dints_segmentation,
+  wholeBody_ct_segmentation, brats_mri_segmentation, prostate_mri_anatomy, lung_nodule_ct_detection.
+  Works with bundles whose inference config exposes `datalist` and `output_dir` (the standard
+  MONAI segmentation bundle layout).
+version: "0.1"
+category: segmentation
+tasks: [segment, download]
+default_task: segment
+task_descriptions:
+  segment: "Run the bundle's inference config on the input image"
+  download: "Download the bundle into $OMM_HOME/weights/monai without running it"
+modalities: [CT, MR, any]
+dims: [3]
+prompt_types: []
+inputs:
+  image: {kind: image, required: false, description: "Image matching the bundle's expected modality"}
+outputs:
+  mask: {kind: mask, description: "Label map written by the bundle (labels from its metadata.json)"}
+params:
+  bundle: {type: string, default: spleen_ct_segmentation, description: "Bundle name in the MONAI Model Zoo, or a path to a local bundle directory"}
+  version: {type: string, description: "Bundle version (default: latest)"}
+  config: {type: string, default: configs/inference.json, description: "Inference config inside the bundle"}
+  overrides: {type: object, description: "Extra config overrides passed to monai.bundle.run, e.g. {\"inferer#roi_size\": [96, 96, 96]}"}
+weights: []
+container:
+  gpu: preferred
+  shm_size: 4g
+local:
+  entrypoint: run.py
+  requires: [monai, torch, ignite]
+  extra: monai
+runners: [local, docker, apptainer]
+license: Apache-2.0 (MONAI); each bundle carries its own license file
+homepage: https://monai.io/model-zoo.html
+citation: "Cardoso et al., MONAI: An open-source framework for deep learning in healthcare, arXiv:2211.02701 (2022)"
+tags: [framework, model-zoo, segmentation, ct, mri, gpu]

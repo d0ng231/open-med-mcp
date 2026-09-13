@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "open-med-mcp": {
+      "command": "open-med-mcp",
+      "args": ["serve"],
+      "env": {"OMM_WORKSPACE": "/absolute/path/to/study", "OMM_RUNNER": "auto"}
+    }
+  }
+}

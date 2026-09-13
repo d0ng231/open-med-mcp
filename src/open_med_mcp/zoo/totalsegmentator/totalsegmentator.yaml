@@ -1,0 +1,47 @@
+name: totalsegmentator
+display_name: TotalSegmentator (automatic CT/MR anatomy)
+description: >-
+  Fully automatic segmentation of 117 anatomical structures in CT (`total`) and 50+ in MR
+  (`total_mr`), plus specialised tasks (lung vessels, body, vertebrae, tissue types ...). No prompts
+  needed; returns one multi-label NIfTI plus the label names. Use `roi_subset` to restrict to a few
+  organs and `fast: true` for a 3 mm preview model.
+version: "0.1"
+tasks: [total, total_mr, total_fast, lung_vessels, body, body_mr, vertebrae_body, cerebral_bleed, hip_implant, pleural_pericard_effusion, liver_vessels, head_glands_cavities, headneck_bones_vessels, head_muscles, headneck_muscles, oculomotor_muscles, liver_segments, liver_segments_mr, craniofacial_structures, abdominal_muscles, tissue_types, tissue_types_mr, tissue_4_types, coronary_arteries, kidney_cysts, breasts, ventricle_parts, thigh_shoulder_muscles, thigh_shoulder_muscles_mr, download]
+default_task: total
+task_descriptions:
+  total: "117 structures in CT (organs, bones, muscles, vessels)"
+  total_mr: "Structures in MR images"
+  total_fast: "Same as total at 3 mm (fast, lower accuracy)"
+  download: "Pre-download weights for the tasks in `download_tasks` (no image needed)"
+modalities: [CT, MR]
+dims: [3]
+prompt_types: []
+inputs:
+  image: {kind: image, required: false, description: "3D CT (or MR for *_mr tasks) as NIfTI"}
+outputs:
+  mask: {kind: mask, description: "Multi-label NIfTI (labels -> names in response)"}
+params:
+  fast: {type: boolean, default: false, description: "Use the 3 mm model (much faster, less accurate)"}
+  fastest: {type: boolean, default: false, description: "Use the 6 mm model"}
+  roi_subset: {type: array, items: string, description: "Only predict these structures (names from the task's class map), e.g. [liver, spleen]"}
+  robust_crop: {type: boolean, default: false, description: "roi_subset: crop with a robust body model first"}
+  download_tasks: {type: array, items: string, description: "download task: which model tasks to fetch (default: total)"}
+  nr_threads: {type: integer, default: 4, description: "Threads for resampling/saving"}
+weights: []
+container:
+  gpu: preferred
+  shm_size: 4g
+local:
+  entrypoint: run.py
+  requires: [totalsegmentator, nnunetv2, torch]
+  extra: totalsegmentator
+runners: [local, docker, apptainer]
+license: Apache-2.0 (code); model weights are downloaded from the upstream project under its terms
+homepage: https://github.com/wasserth/TotalSegmentator
+citation: "Wasserthal et al., TotalSegmentator: Robust Segmentation of 104 Anatomic Structures in CT Images, Radiology: AI (2023)"
+notes: >-
+  Weights are downloaded automatically on first use into $OMM_HOME/weights/totalsegmentator
+  (TOTALSEG_HOME_DIR). Some special tasks require a (free for non-commercial use) license key
+  from the upstream project. `fast` runs on CPU in a few minutes; the full-resolution model
+  needs a GPU for reasonable runtimes.
+tags: [automatic, anatomy, ct, mr, organs, bones, gpu, cpu]

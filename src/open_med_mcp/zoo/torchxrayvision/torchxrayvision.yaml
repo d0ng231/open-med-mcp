@@ -1,0 +1,34 @@
+name: torchxrayvision
+display_name: TorchXRayVision (chest X-ray pathology classification)
+description: >-
+  Pre-trained chest radiograph classifiers (DenseNet-121 / ResNet-50) from TorchXRayVision that
+  output calibrated probabilities for 18 findings (atelectasis, cardiomegaly, consolidation,
+  edema, effusion, emphysema, fibrosis, fracture, hernia, infiltration, lung lesion, lung opacity,
+  mass, nodule, pleural thickening, pneumonia, pneumothorax, enlarged cardiomediastinum). CPU is fine.
+version: "0.1"
+category: classification
+tasks: [classify]
+default_task: classify
+modalities: [XR]
+dims: [2]
+prompt_types: []
+inputs:
+  image: {kind: image, required: true, description: "Frontal chest radiograph (PNG/JPEG/DICOM)"}
+outputs:
+  predictions: {kind: json, description: "Probabilities per finding"}
+params:
+  weights: {type: string, default: densenet121-res224-all, choices: [densenet121-res224-all, densenet121-res224-nih, densenet121-res224-chex, densenet121-res224-mimic_ch, densenet121-res224-mimic_nb, densenet121-res224-pc, densenet121-res224-rsna, resnet50-res512-all], description: "Pre-trained weights (`all` = trained on 8 datasets)"}
+  top_k: {type: integer, default: 5, minimum: 1, maximum: 18}
+weights: []
+container:
+  gpu: none
+local:
+  entrypoint: run.py
+  requires: [torchxrayvision, torch]
+  extra: torchxrayvision
+runners: [local, docker, apptainer]
+license: Apache-2.0
+homepage: https://github.com/mlmed/torchxrayvision
+citation: "Cohen et al., TorchXRayVision: A library of chest X-ray datasets and models, MIDL (2022)"
+notes: "Probabilities are model outputs for research use; they are not diagnoses. Weights (~30 MB) download on first use into $OMM_HOME/weights/torchxrayvision."
+tags: [classification, x-ray, chest, cpu]

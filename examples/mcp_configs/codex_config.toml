@@ -1,0 +1,8 @@
+# ~/.codex/config.toml
+[mcp_servers.open_med_mcp]
+command = "open-med-mcp"
+args = ["serve"]
+
+[mcp_servers.open_med_mcp.env]
+OMM_WORKSPACE = "/absolute/path/to/study"
+OMM_RUNNER = "auto"

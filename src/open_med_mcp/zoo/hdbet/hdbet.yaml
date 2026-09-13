@@ -1,0 +1,35 @@
+name: hdbet
+display_name: HD-BET (MRI brain extraction, Isensee et al.)
+description: >-
+  Deep-learning brain extraction (skull stripping) for MRI of any common sequence (T1, T1c, T2,
+  FLAIR), robust to pathology and low quality. Produces a brain mask and a brain-extracted image.
+  Version 2.0 is nnU-Net based; use GPU for speed (about 10 s), CPU takes several minutes.
+version: "0.1"
+category: preprocessing
+tasks: [extract]
+default_task: extract
+modalities: [MR]
+dims: [3]
+prompt_types: []
+inputs:
+  image: {kind: image, required: true, description: "3D brain MRI (any sequence) as NIfTI"}
+outputs:
+  mask: {kind: mask, description: "Binary brain mask"}
+  brain: {kind: image, description: "Brain-extracted image (skull removed)", required: false}
+labels: {1: brain}
+params:
+  tta: {type: boolean, default: false, description: "Test-time augmentation (mirroring): slower, slightly more robust"}
+  save_brain: {type: boolean, default: true, description: "Also write the brain-extracted image"}
+weights: []
+container:
+  gpu: preferred
+local:
+  entrypoint: run.py
+  requires: [HD_BET, torch]
+  extra: hdbet
+runners: [local, docker, apptainer]
+license: Apache-2.0 (code); weights (Zenodo) are downloaded on first use
+homepage: https://github.com/MIC-DKFZ/HD-BET
+citation: "Isensee et al., Automated brain extraction of multisequence MRI using artificial neural networks, Hum Brain Mapp (2019)"
+notes: "Weights (~300 MB) are downloaded on first use into $OMM_HOME/weights/hdbet/hd-bet_params."
+tags: [automatic, mri, brain, skull-stripping, preprocessing, gpu]

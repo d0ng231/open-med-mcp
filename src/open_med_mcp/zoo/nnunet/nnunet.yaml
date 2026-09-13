@@ -1,0 +1,47 @@
+name: nnunet
+display_name: nnU-Net v2 (run any trained nnU-Net model)
+description: >-
+  Inference with any nnU-Net v2 model - your own trained results folder, a zip exported with
+  nnUNetv2_export_model_to_zip, or a public model. Point `model_dir` at a
+  `<trainer>__<plans>__<configuration>` folder (or give dataset/configuration/trainer names for
+  models installed under $OMM_HOME/weights/nnunet/results). Label names come from dataset.json.
+version: "0.1"
+category: segmentation
+tasks: [predict, install]
+default_task: predict
+task_descriptions:
+  predict: "Predict a label map for the input image"
+  install: "Install a model zip (`zip_path` or `zip_url`) into the nnU-Net results folder (no image needed)"
+modalities: [any]
+dims: [2, 3]
+prompt_types: []
+inputs:
+  image: {kind: image, required: false, description: "Image matching the model's training modality (single-channel models)"}
+outputs:
+  mask: {kind: mask, description: "Label map (labels from the model's dataset.json)"}
+params:
+  model_dir: {type: string, description: "Path to a trained model folder containing dataset.json, plans.json and fold_*/ (absolute host path or relative to $OMM_HOME/weights/nnunet/results)"}
+  dataset: {type: string, description: "Alternative to model_dir: dataset folder name, e.g. Dataset297_TotalSegmentator_total_3mm_1559subj"}
+  configuration: {type: string, default: 3d_fullres, description: "2d | 3d_fullres | 3d_lowres | 3d_cascade_fullres"}
+  trainer: {type: string, default: nnUNetTrainer}
+  plans: {type: string, default: nnUNetPlans}
+  folds: {type: array, items: integer, description: "Folds to ensemble (default: all folds found)"}
+  checkpoint: {type: string, default: checkpoint_final.pth}
+  tta: {type: boolean, default: false, description: "Test-time mirroring (slower, slightly better)"}
+  tile_step_size: {type: number, default: 0.5, minimum: 0.1, maximum: 1.0}
+  zip_path: {type: string, description: "install: local model zip"}
+  zip_url: {type: string, description: "install: URL of a model zip"}
+weights: []
+container:
+  gpu: preferred
+  shm_size: 4g
+local:
+  entrypoint: run.py
+  requires: [nnunetv2, torch]
+  extra: nnunet
+runners: [local, docker, apptainer]
+license: Apache-2.0
+homepage: https://github.com/MIC-DKFZ/nnUNet
+citation: "Isensee et al., nnU-Net: a self-configuring method for deep learning-based biomedical image segmentation, Nat Methods (2021)"
+notes: "For multi-channel models pass additional inputs image_1, image_2 ... in channel order."
+tags: [framework, segmentation, custom-models, gpu, ct, mri, any]

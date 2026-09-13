@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>{{ title }}</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #000; color: #ddd; font: 13px system-ui, sans-serif; }
+  #bar { padding: 6px 12px; background: #171a21; display: flex; gap: 16px; align-items: center; }
+  #bar label { display: flex; gap: 6px; align-items: center; }
+  canvas { width: 100%; height: calc(100% - 34px); display: block; }
+</style>
+</head>
+<body>
+<div id="bar">
+  <b>{{ title }}</b>
+  <label>layout <select id="layout"><option value="0">axial</option><option value="1">coronal</option><option value="2">sagittal</option><option value="3" selected>multiplanar</option><option value="4">render</option></select></label>
+  <label>overlay opacity <input id="alpha" type="range" min="0" max="1" step="0.05" value="0.5"></label>
+  <span style="color:#8a919e">NiiVue · scroll to change slice · drag to pan/rotate</span>
+</div>
+<canvas id="gl"></canvas>
+<script type="module">
+  import { Niivue, SLICE_TYPE } from "{{ niivue_url }}";
+  const nv = new Niivue({ backColor: [0, 0, 0, 1], show3Dcrosshair: true, isColorbar: false });
+  await nv.attachTo("gl");
+  const vols = [{ url: "{{ image }}" }{% for m in masks %}, { url: "{{ m }}", colormap: "{{ ['red', 'green', 'blue', 'yellow', 'violet', 'cyan'][loop.index0 % 6] }}", opacity: 0.5 }{% endfor %}];
+  await nv.loadVolumes(vols);
+  nv.setSliceType(SLICE_TYPE.MULTIPLANAR);
+  document.getElementById("layout").addEventListener("change", e => nv.setSliceType(parseInt(e.target.value)));
+  document.getElementById("alpha").addEventListener("input", e => { for (let i = 1; i < nv.volumes.length; i++) nv.setOpacity(i, parseFloat(e.target.value)); });
+</script>
+</body>
+</html>

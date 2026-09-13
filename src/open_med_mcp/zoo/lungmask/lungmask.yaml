@@ -1,0 +1,38 @@
+name: lungmask
+display_name: lungmask (CT lungs and lobes, Hofmanninger et al.)
+description: >-
+  Robust automatic lung segmentation in chest CT (U-Net R231, trained on diverse pathologies) with
+  optional lobe segmentation (LTRCLobes). Runs in seconds on GPU and in about a minute on CPU.
+  Also reports per-lung volumes and the low-attenuation (emphysema) fraction below a HU threshold.
+version: "0.1"
+category: segmentation
+tasks: [lungs, lobes]
+default_task: lungs
+task_descriptions:
+  lungs: "Right and left lung (labels 1 = right, 2 = left) with model R231"
+  lobes: "Five lobes (LTRCLobes) with R231 used to fill missed regions"
+modalities: [CT]
+dims: [3]
+prompt_types: []
+inputs:
+  image: {kind: image, required: true, description: "Chest CT volume in Hounsfield units"}
+outputs:
+  mask: {kind: mask, description: "Lung / lobe label map"}
+params:
+  model: {type: string, default: R231, choices: [R231, LTRCLobes, R231CovidWeb], description: "Weights: R231 (lungs), LTRCLobes (lobes), R231CovidWeb (lungs, tuned for COVID-19 opacities)"}
+  batch_size: {type: integer, default: 20, minimum: 1, maximum: 64}
+  postprocess: {type: boolean, default: true, description: "Keep only the largest components per label"}
+  laa_threshold_hu: {type: number, default: -950, description: "Threshold for the low-attenuation-area (LAA%) emphysema index"}
+weights: []
+container:
+  gpu: preferred
+local:
+  entrypoint: run.py
+  requires: [lungmask, torch]
+  extra: lungmask
+runners: [local, docker, apptainer]
+license: Apache-2.0 (code); weights are downloaded from the upstream GitHub releases
+homepage: https://github.com/JoHof/lungmask
+citation: "Hofmanninger et al., Automatic lung segmentation in routine imaging is primarily a data diversity problem, not a methodology problem, Eur Radiol Exp (2020)"
+notes: "Weights (~30 MB per model) download on first use into $OMM_HOME/weights/lungmask/hub/checkpoints."
+tags: [automatic, ct, lung, lobes, emphysema, gpu, cpu]

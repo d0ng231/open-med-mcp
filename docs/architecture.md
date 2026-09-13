@@ -1,0 +1,64 @@
+# Architecture
+
+open-med-mcp is a single Python package with four layers and one very small contract between the
+server and the models.
+
+![architecture](assets/architecture.png)
+
+## Layers
+
+| layer | module | responsibility |
+|---|---|---|
+| **server / tools** | `open_med_mcp.server`, `open_med_mcp.tools.*` | MCP surface: 31 tools, guideline prompts, `guideline://`, `model://`, `omm://conventions` resources. Tools are thin: resolve paths, call core functions, package JSON + preview images into a `CallToolResult`. |
+| **core** | `open_med_mcp.core.*` | `MedicalImage` (SimpleITK/Pillow I/O, ITK geometry, plane <-> axis mapping), windowing, masks (stats, post-processing, prompt extraction), metrics, prompts, and processing (resampling, re-orientation, cropping, N4, registration, mask algebra, shape features, meshes, DICOM series). Pure functions; no MCP. |
+| **models** | `open_med_mcp.models.*` + `open_med_mcp.zoo/*` | Manifests (YAML), registry (bundled + user dirs), weights, the job contract, three runners (local / Docker / Apptainer), wrapped third-party images, Dockerfile -> Apptainer conversion, and the adapters themselves. |
+| **guidelines** | `open_med_mcp.guidelines.*` | Markdown + YAML front matter protocols, preset + user libraries, search. |
+| **viewer** | `open_med_mcp.viewer.*` | `ViewSpec` (declarative), `display_slice` (native <-> screen mapping), PNG renderer (matplotlib), HTML slice viewer (Jinja2), reports, NiiVue page, renderer registry with entry points. |
+
+## Data flow of a `segment` call
+
+1. The tool resolves the image path against the workspace and loads it (cached).
+2. Prompts (native `x, y, z`) are normalised to the adapter wire format: slice index along the
+   chosen plane's NumPy axis and in-plane `(col, row)` coordinates.
+3. `prepare_job` creates `omm_outputs/<run>/`, stages the input in a canonical format
+   (`.nii.gz` for volumes, `.png` for 2D integer images) and writes `request.json`.
+4. `select_runner` picks local -> docker -> apptainer (or the configured runner); the runner executes
+   `python run.py --job <dir>` (inside the container the directory is mounted at `/job`, weights at `/weights`).
+5. The adapter writes `outputs/mask.nii.gz` and `response.json` (status, outputs, labels, stats, timing).
+6. The tool reads the response, writes a `.labels.json` sidecar, computes `mask_stats`, renders a
+   three-plane preview and appends a line to `omm_outputs/provenance.jsonl`.
+
+## Design decisions
+
+* **Native coordinates, no re-orientation.** Agents reason about the numbers `inspect_image` prints;
+  every tool and figure uses the same voxel index space. Radiological display flips are applied only
+  when drawing, and the mapping is reported back (`panels[].screen_x_axis`, `flip_x`, ...).
+* **Job directory instead of an RPC API.** A directory with `request.json` / `response.json` is
+  trivially debuggable, works identically for local subprocesses, Docker and Apptainer, and
+  survives crashes (the log stays). The price is model reload per call, which is fine for agent
+  workflows (SAM 2 tiny loads in ~2 s).
+* **Adapters are standalone.** `run.py` depends only on `omm_job.py` (+ NumPy/SimpleITK/Pillow), never
+  on `open_med_mcp`, so containers stay small and adapters can be written in any framework.
+* **Manifests drive everything.** Tasks, parameters (with descriptions the agent reads), weights,
+  container image, local requirements, backend preferences. `describe_model` returns a JSON schema
+  built from the manifest.
+* **Previews are part of results.** Every segmentation returns an image content block; agents that
+  can see images (Claude, Codex) QC their own work without an extra call.
+* **Guidelines are data.** Protocols are Markdown files, versioned in git, overridable per workspace.
+* **Provenance by default.** Every run directory is self-describing; reports quote it.
+
+## Repository layout
+
+```text
+src/open_med_mcp/
+  server.py  cli.py  config.py  workspace.py  conventions.md
+  core/        image.py windowing.py masks.py metrics.py prompts.py processing.py
+  models/      manifest.py registry.py job.py runners.py wrapped.py weights.py containers.py
+  guidelines/  loader.py presets/*.md
+  viewer/      spec.py slicing.py registry.py png.py html.py report.py serve.py templates/
+  tools/       images.py models.py masks.py processing.py viewer.py guidelines.py _common.py
+  zoo/         _sdk/omm_job.py  classical/ sam2/ totalsegmentator/ lungmask/ hdbet/ synthstrip/ nnunet/ monai/ torchxrayvision/ _template/
+tests/         synthetic-data tests for every layer (CPU only)
+docs/          this documentation + assets
+.github/       CI (lint + tests + wheel) and container image builds (GHCR)
+```

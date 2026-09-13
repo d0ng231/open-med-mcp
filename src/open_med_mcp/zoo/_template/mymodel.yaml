@@ -1,0 +1,26 @@
+# Copy this folder to src/open_med_mcp/zoo/<adapter>/ (or to $OMM_MODEL_DIRS/<adapter>/) and edit.
+name: mymodel
+display_name: My Model
+description: One paragraph that tells an agent when to use this model.
+version: "0.1"
+tasks: [segment]
+modalities: [CT]
+dims: [3]
+prompt_types: []          # [] = automatic; or [point, box, text]
+inputs:
+  image: {kind: image, required: true}
+outputs:
+  mask: {kind: mask}
+params:
+  threshold: {type: number, default: 0.5, minimum: 0, maximum: 1, description: "Example parameter"}
+weights:
+  - {id: default, file: mymodel.pt, url: "https://example.org/mymodel.pt", sha256: null, size_mb: 100}
+container:
+  gpu: preferred
+local:
+  entrypoint: run.py
+  requires: [numpy]
+runners: [local, docker, apptainer]
+license: Apache-2.0
+homepage: https://example.org
+tags: [example]
