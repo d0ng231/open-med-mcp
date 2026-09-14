@@ -64,6 +64,8 @@ def _draw_overlays(ax: plt.Axes, ds: DisplaySlice, masks: list[MaskItem], legend
 
 def _draw_prompts(ax: plt.Axes, ds: DisplaySlice, spec: ViewSpec, img: MedicalImage) -> None:
     for p in spec.prompts:
+        if p.type == "text":
+            continue
         coords = list(p.coords)
         if p.type == "point":
             if img.is_2d:
@@ -134,6 +136,10 @@ def _draw_prompts(ax: plt.Axes, ds: DisplaySlice, spec: ViewSpec, img: MedicalIm
             )
 
 
+def _fs(spec: ViewSpec, base: float) -> float:
+    return base * spec.font_scale
+
+
 def _panel(
     ax: plt.Axes,
     img: MedicalImage,
@@ -145,8 +151,7 @@ def _panel(
     crop: tuple[int, int, int, int] | None,
 ) -> None:
     if img.is_rgb:
-        base = ds.array[..., :3].astype(np.uint8)
-        ax.imshow(base, interpolation="nearest", aspect=ds.aspect)
+        ax.imshow(ds.array[..., :3].astype(np.uint8), interpolation="nearest", aspect=ds.aspect)
     else:
         ax.imshow(ds.array, cmap="gray", vmin=0, vmax=255, interpolation="nearest", aspect=ds.aspect)
     _draw_overlays(ax, ds, masks, legend)
@@ -156,26 +161,36 @@ def _panel(
         yt, yl = ds.native_ticks("y")
         ax.set_xticks(xt, xl)
         ax.set_yticks(yt, yl)
-        ax.tick_params(labelsize=7, colors="#dddddd", length=2)
-        ax.grid(True, color="#ffffff", alpha=0.18, linewidth=0.6)
-        ax.set_xlabel(f"{'xyz'[ds.col_axis_xyz]} (voxel)", fontsize=8, color="#dddddd")
-        ax.set_ylabel(f"{'xyz'[ds.row_axis_xyz]} (voxel)", fontsize=8, color="#dddddd")
+        ax.tick_params(labelsize=_fs(spec, 8), colors="#cfcfcf", length=2.5, pad=2)
+        ax.grid(True, color="#ffffff", alpha=0.16, linewidth=0.6)
+        ax.set_xlabel(f"{'xyz'[ds.col_axis_xyz]} (voxel)", fontsize=_fs(spec, 9), color="#cfcfcf", labelpad=2)
+        ax.set_ylabel(f"{'xyz'[ds.row_axis_xyz]} (voxel)", fontsize=_fs(spec, 9), color="#cfcfcf", labelpad=2)
     else:
         ax.set_xticks([])
         ax.set_yticks([])
     for sp in ax.spines.values():
-        sp.set_color("#555555")
+        sp.set_color("#444444")
+    # square, letter-boxed view: every panel gets the same size regardless of slice shape
+    h, w = ds.shape
     if crop:
         x0, y0, x1, y1 = crop
-        ax.set_xlim(x0 - 0.5, x1 + 0.5)
-        ax.set_ylim(y1 + 0.5, y0 - 0.5)
+        w_data, h_data = (x1 - x0 + 1), (y1 - y0 + 1)
+        cx, cy = (x0 + x1) / 2.0, (y0 + y1) / 2.0
+    else:
+        w_data, h_data = w, h
+        cx, cy = (w - 1) / 2.0, (h - 1) / 2.0
+    side = max(w_data, h_data * ds.aspect) * 1.02
+    ax.set_xlim(cx - side / 2, cx + side / 2)
+    ax.set_ylim(cy + side / (2 * ds.aspect), cy - side / (2 * ds.aspect))
     if spec.show_title:
         t = (
-            f"{ds.plane} {'xyz'[ds.stack_axis_xyz]}={ds.index}/{ds.n_slices - 1}"
+            f"{ds.plane}  {'xyz'[ds.stack_axis_xyz]} = {ds.index} / {ds.n_slices - 1}"
             if not img.is_2d
             else "image"
         )
-        ax.set_title(f"{t}   window: {wlabel}", fontsize=9, color="white")
+        if spec.layout != "montage":
+            t = f"{t}    window: {wlabel}"
+        ax.set_title(t, fontsize=_fs(spec, 10), color="white", pad=6)
 
 
 def _crop_box(ds: DisplaySlice, masks: list[MaskItem], margin: int) -> tuple[int, int, int, int] | None:
@@ -229,22 +244,31 @@ class PngRenderer:
             panels = [display_slice(base, spec.plane, idx[0])]
 
         n = len(panels)
-        ncols = 3 if spec.layout == "three-plane" else int(np.ceil(np.sqrt(n)))
+        ncols = 3 if spec.layout == "three-plane" else (1 if n == 1 else min(4, int(np.ceil(np.sqrt(n)))))
         nrows = int(np.ceil(n / ncols))
-        # figure size from the panel aspect so that the longest edge is ~max_px
-        h0, w0 = panels[0].shape
-        panel_w_in = 3.6
-        panel_h_in = panel_w_in * (h0 * panels[0].aspect) / max(w0, 1)
-        panel_h_in = float(np.clip(panel_h_in, 1.6, 6.0))
-        fig, axes = plt.subplots(
-            nrows,
-            ncols,
-            figsize=(
-                panel_w_in * ncols + 0.4,
-                panel_h_in * nrows + (0.6 if spec.show_title or spec.title else 0.2),
-            ),
-            dpi=spec.dpi,
-            squeeze=False,
+        panel_in = spec.panel_inches or {"single": 5.2, "three-plane": 3.9, "montage": 3.0}[spec.layout]
+        has_legend = bool(masks) and spec.show_legend
+        title = spec.title
+        if title is None and spec.layout == "montage" and spec.show_title:
+            title = f"{spec.plane} montage    window: {wlabel}"
+        fs = spec.font_scale
+        # explicit layout (no tight_layout): square slots sized exactly, margins scaled with the fonts
+        left = 0.62 * fs if spec.grid else 0.12
+        right = 0.14
+        wspace = (0.66 * fs if spec.grid else 0.18) if ncols > 1 else 0.0
+        hspace = ((0.68 if spec.show_title else 0.2) + (0.5 if spec.grid else 0.0)) * fs if nrows > 1 else 0.0
+        top = (0.5 * fs if title else 0.12) + (0.32 * fs if spec.show_title else 0.06)
+        bottom = (0.52 * fs if spec.grid else 0.12) + (0.42 * fs if has_legend else 0.0)
+        fig_w = left + ncols * panel_in + (ncols - 1) * wspace + right
+        fig_h = bottom + nrows * panel_in + (nrows - 1) * hspace + top
+        fig, axes = plt.subplots(nrows, ncols, figsize=(fig_w, fig_h), dpi=spec.dpi, squeeze=False)
+        fig.subplots_adjust(
+            left=left / fig_w,
+            right=1 - right / fig_w,
+            bottom=bottom / fig_h,
+            top=1 - top / fig_h,
+            wspace=wspace / panel_in,
+            hspace=hspace / panel_in,
         )
         fig.patch.set_facecolor(spec.background)
         legend: dict[str, str] = {}
@@ -255,20 +279,22 @@ class PngRenderer:
                 continue
             crop = _crop_box(panels[i], masks, spec.crop_margin) if spec.crop_to_mask else None
             _panel(ax, image, panels[i], spec, masks, legend, wlabel, crop)
-        if spec.title:
-            fig.suptitle(spec.title, color="white", fontsize=10)
-        if legend and spec.show_legend:
+        if title:
+            fig.suptitle(title, color="white", fontsize=_fs(spec, 12), y=1 - 0.12 / fig_h, va="top")
+        if legend and has_legend:
             handles = [patches.Patch(facecolor=c, edgecolor=c, label=k) for k, c in legend.items()][:14]
             fig.legend(
                 handles=handles,
                 loc="lower center",
-                ncol=min(len(handles), 5),
-                fontsize=7,
+                ncol=min(len(handles), 4),
+                fontsize=_fs(spec, 9.5),
                 frameon=False,
                 labelcolor="white",
-                bbox_to_anchor=(0.5, 0.0),
+                bbox_to_anchor=(0.5, 0.06 / fig_h),
+                borderaxespad=0.0,
+                handlelength=1.4,
+                columnspacing=1.6,
             )
-        fig.tight_layout(rect=(0, 0.05 if legend and spec.show_legend else 0, 1, 0.96 if spec.title else 1))
         buf = io.BytesIO()
         fig.savefig(buf, format="png", dpi=spec.dpi, facecolor=fig.get_facecolor())
         plt.close(fig)

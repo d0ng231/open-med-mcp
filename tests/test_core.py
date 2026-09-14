@@ -125,3 +125,20 @@ def test_metrics():
     r = compare_masks(lab_a, lab_b, (1.0, 1.0, 1.0))
     assert set(r["per_label"]) == {"1", "2"} and r["per_label"]["2"]["dice"] == 0.0
     assert "mean_dice" in r
+
+
+def test_text_prompts(ct_volume):
+    img = MedicalImage.load(ct_volume["path"])
+    wire = normalize_prompts(
+        [
+            {"type": "text", "text": " liver "},
+            {"type": "text", "text": "spleen"},
+            {"type": "point", "coords": [1, 2, 3]},
+        ],
+        img,
+    )
+    assert wire[0] == {"type": "text", "text": "liver", "object_id": 1}
+    assert wire[1] == {"type": "text", "text": "spleen", "object_id": 2}
+    assert wire[2]["type"] == "point"
+    with pytest.raises(ValueError):
+        Prompt(type="text", text="  ")

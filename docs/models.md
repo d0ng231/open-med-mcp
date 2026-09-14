@@ -6,6 +6,7 @@
 |---|---|---|---|---|---|
 | `medsam2` | `sam2` | segmentation | `segment` | box, point | default checkpoint `medsam2_latest`; also `medsam2_ct_lesion`, `medsam2_mri_liver_lesion`, `medsam2_us_heart`, `medsam2_2411` |
 | `sam2` | `sam2` | segmentation | `segment` | box, point | `sam2.1_hiera_tiny/small/base_plus/large` |
+| `voxtell` | `voxtell` | segmentation | `segment`, `download` | text | free-text prompts, one per structure; label i = prompt i; needs a GPU |
 | `totalsegmentator` | `totalsegmentator` | segmentation | `total`, `total_mr`, `total_fast`, `lung_vessels`, `body`, ... `download` | - | multi-label output + label names; `roi_subset` limits structures |
 | `lungmask` | `lungmask` | segmentation | `lungs`, `lobes` | - | LAA% emphysema index in `stats.low_attenuation_area` |
 | `hdbet` | `hdbet` | preprocessing | `extract` | - | outputs `mask` and `brain` |
@@ -175,7 +176,7 @@ arguments), `{flag:<param>:<literal>}` (emitted when the parameter is truthy), `
 Images are published by `.github/workflows/containers.yml` to
 `ghcr.io/d0ng231/open-med-mcp-<adapter>:<version>`. Base images: `python:3.12-slim` (classical,
 torchxrayvision with CPU PyTorch), `pytorch/pytorch:2.5.1-cuda12.4-cudnn9-runtime` (sam2,
-totalsegmentator, lungmask, hdbet, nnunet, monai). Weights are never baked in; wrapped models use
+totalsegmentator, lungmask, hdbet, nnunet, monai; `pytorch/pytorch:2.8.0-cuda12.6-cudnn9-runtime` for voxtell). Weights are never baked in; wrapped models use
 the upstream image as is.
 
 Apptainer definitions are generated from the Dockerfiles by

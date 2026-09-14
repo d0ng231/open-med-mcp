@@ -5,7 +5,7 @@ summary: MRI-specific notes - intensity is not calibrated, choose windows from p
 tags: [segmentation, mri, mr, 3d]
 modalities: [MR]
 tasks: [segmentation]
-models: [medsam2, totalsegmentator, classical]
+models: [medsam2, voxtell, totalsegmentator, classical]
 version: 1
 ---
 ## Key differences from CT
@@ -20,6 +20,6 @@ version: 1
 1. `inspect_image(mri)` -> spacing, planes, percentiles.
 2. Anatomy: `run_model("totalsegmentator", {"image": mri}, {"task": "total_mr"})` (or
    `roi_subset`). Lesions: `segment(mri, model="medsam2", prompts=[box], plane=<acquisition plane>)`
-   (`medsam2_mri_liver_lesion` for liver lesions).
+   (`medsam2_mri_liver_lesion` for liver lesions), or `voxtell` with text prompts ("hippocampus", "brain tumor").
 3. QC in three planes; MRI masks often need `fill_holes` and `remove_small`.
 4. Report volumes in mL and the sequence/series description.

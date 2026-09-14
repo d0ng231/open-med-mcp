@@ -169,18 +169,18 @@ def _bar_chart(probabilities: dict[str, float], title: str, top: int = 18) -> Re
     items = sorted(probabilities.items(), key=lambda kv: kv[1])[-top:]
     names = [k for k, _ in items]
     vals = [v for _, v in items]
-    fig, ax = plt.subplots(figsize=(6.4, 0.32 * len(items) + 1.2), dpi=120)
+    fig, ax = plt.subplots(figsize=(7.2, 0.36 * len(items) + 1.4), dpi=120)
     fig.patch.set_facecolor("#000000")
     ax.set_facecolor("#000000")
     colors = ["#ff3b30" if v >= 0.5 else "#0a84ff" for v in vals]
     ax.barh(names, vals, color=colors)
     ax.set_xlim(0, 1)
     ax.axvline(0.5, color="#ffffff", alpha=0.3, linewidth=0.8, linestyle="--")
-    ax.tick_params(colors="#dddddd", labelsize=8)
-    ax.set_xlabel("probability", color="#dddddd", fontsize=8)
+    ax.tick_params(colors="#dddddd", labelsize=10)
+    ax.set_xlabel("probability", color="#dddddd", fontsize=10)
     for sp in ax.spines.values():
         sp.set_color("#555555")
-    ax.set_title(title, color="white", fontsize=9)
+    ax.set_title(title, color="white", fontsize=11, pad=10)
     for i, v in enumerate(vals):
         ax.text(
             min(v + 0.01, 0.97),
@@ -360,11 +360,20 @@ def register(server: MCPServer) -> None:
         extra: dict[str, Any] = {}
         if m.is_promptable:
             if not prompts:
-                raise ValueError(f"model {model!r} needs prompts (points/boxes); see get_conventions()")
+                kinds = "/".join(m.prompt_types)
+                raise ValueError(f"model {model!r} needs prompts ({kinds}); see get_conventions()")
+            bad = [pp.type for pp in prompts if pp.type not in m.prompt_types]
+            if bad:
+                raise ValueError(f"model {model!r} accepts {m.prompt_types} prompts, not {sorted(set(bad))}")
             wire = normalize_prompts(prompts, img, plane)
             params["prompts"] = wire
-            params["axis"] = img.numpy_axis_for_plane(plane)
-            extra = {"prompts": [pp.model_dump() for pp in prompts], "plane": plane, "wire_prompts": wire}
+            if any(pp.type != "text" for pp in prompts):
+                params["axis"] = img.numpy_axis_for_plane(plane)
+            extra = {
+                "prompts": [pp.model_dump(exclude_none=True) for pp in prompts],
+                "plane": plane,
+                "wire_prompts": wire,
+            }
         task = task or m.default_task
         return execute_model(m, task, {"image": p}, params, output, preview, "segment", extra)
 

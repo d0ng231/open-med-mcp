@@ -93,7 +93,21 @@ def save_logo() -> None:
     plt.close(fig)
 
 
-def box(ax, x, y, w, h, title, lines=(), fc="#ffffff", ec="#cbd5e1", title_color=INK, fs=10.5):
+def box(
+    ax,
+    x,
+    y,
+    w,
+    h,
+    title,
+    lines=(),
+    fc="#ffffff",
+    ec="#cbd5e1",
+    title_color=INK,
+    fs=10.5,
+    line_fs=8.6,
+    line_gap=0.36,
+):
     ax.add_patch(
         FancyBboxPatch(
             (x, y), w, h, boxstyle="round,pad=0,rounding_size=0.18", fc=fc, ec=ec, lw=1.4, zorder=2
@@ -101,7 +115,7 @@ def box(ax, x, y, w, h, title, lines=(), fc="#ffffff", ec="#cbd5e1", title_color
     )
     ax.text(
         x + w / 2,
-        y + h - 0.32,
+        y + h - 0.3,
         title,
         ha="center",
         va="top",
@@ -113,18 +127,40 @@ def box(ax, x, y, w, h, title, lines=(), fc="#ffffff", ec="#cbd5e1", title_color
     for i, line in enumerate(lines):
         ax.text(
             x + w / 2,
-            y + h - 0.72 - i * 0.36,
+            y + h - 0.7 - i * line_gap,
             line,
             ha="center",
             va="top",
-            fontsize=8.6,
+            fontsize=line_fs,
             color="#334155",
             zorder=3,
             family="DejaVu Sans",
         )
 
 
-def arrow(ax, x0, y0, x1, y1, text="", color="#64748b", ls="-"):
+def small_box(ax, x, y, w, h, name, sub, fc="#f8fafc", ec="#cbd5e1", name_fs=9.0, sub_fs=7.4):
+    ax.add_patch(
+        FancyBboxPatch(
+            (x, y), w, h, boxstyle="round,pad=0,rounding_size=0.12", fc=fc, ec=ec, lw=1.2, zorder=3
+        )
+    )
+    ax.text(
+        x + w / 2,
+        y + h * 0.66,
+        name,
+        ha="center",
+        va="center",
+        fontsize=name_fs,
+        fontweight="bold",
+        color=INK,
+        zorder=5,
+    )
+    ax.text(
+        x + w / 2, y + h * 0.28, sub, ha="center", va="center", fontsize=sub_fs, color="#64748b", zorder=5
+    )
+
+
+def arrow(ax, x0, y0, x1, y1, text="", color="#64748b", ls="-", text_dy=0.14, text_fs=8):
     ax.annotate(
         "",
         xy=(x1, y1),
@@ -135,44 +171,63 @@ def arrow(ax, x0, y0, x1, y1, text="", color="#64748b", ls="-"):
     if text:
         ax.text(
             (x0 + x1) / 2,
-            (y0 + y1) / 2 + 0.16,
+            (y0 + y1) / 2 + text_dy,
             text,
             ha="center",
             va="bottom",
-            fontsize=8,
+            fontsize=text_fs,
             color=color,
             zorder=5,
-            bbox={"fc": PAPER, "ec": "none", "pad": 1.5},
         )
 
 
 def save_architecture() -> None:
-    fig, ax = plt.subplots(figsize=(13.2, 7.4), dpi=120)
+    W, H = 14.2, 8.3
+    fig, ax = plt.subplots(figsize=(W, H), dpi=120)
     fig.patch.set_facecolor(PAPER)
     ax.set_facecolor(PAPER)
-    ax.set_xlim(0, 13.2)
-    ax.set_ylim(0, 7.4)
+    ax.set_xlim(0, W)
+    ax.set_ylim(0, H)
     ax.axis("off")
-    # agents
+    # --- left column: clients + notes
     box(
         ax,
         0.3,
-        5.3,
-        2.6,
-        1.7,
+        6.2,
+        2.7,
+        1.75,
         "AI agent clients",
         ("Claude Code · Codex CLI", "Claude Desktop · Cursor", "any MCP client"),
         fc="#e0f2fe",
         ec="#7dd3fc",
     )
-    # server
+    ax.text(
+        0.35,
+        5.55,
+        "Everything runs locally:\nimages never leave the machine.",
+        fontsize=8.6,
+        color="#475569",
+        va="top",
+        linespacing=1.5,
+    )
+    ax.text(0.35, 4.55, "Three pillars", fontsize=9.2, color=INK, va="top", fontweight="bold")
+    ax.text(
+        0.35,
+        4.25,
+        "1. containerized specialised models\n2. preset / custom guidelines\n3. code-customisable viewer",
+        fontsize=8.6,
+        color="#475569",
+        va="top",
+        linespacing=1.55,
+    )
+    # --- server
     box(
         ax,
         3.6,
-        4.15,
-        6.0,
-        2.85,
-        "open-med-mcp server  (MCP, stdio / HTTP)",
+        5.05,
+        6.4,
+        2.9,
+        "open-med-mcp server   (MCP over stdio or HTTP)",
         (),
         fc="#ffffff",
         ec="#94a3b8",
@@ -181,148 +236,170 @@ def save_architecture() -> None:
     box(
         ax,
         3.8,
-        4.35,
-        1.8,
-        2.1,
-        "tools",
-        ("inspect_image", "segment / run_model", "mask_stats · compare", "render_view · report"),
+        5.25,
+        1.95,
+        2.15,
+        "tools (31)",
+        (
+            "inspect · DICOM · convert",
+            "segment · run_model · batch",
+            "masks · metrics · features",
+            "resample · register · N4",
+            "render_view · report",
+        ),
         fc="#f1f5f9",
         ec="#cbd5e1",
         fs=9.5,
+        line_fs=8.0,
+        line_gap=0.31,
     )
     box(
         ax,
-        5.75,
-        4.35,
-        1.8,
-        2.1,
-        "guidelines",
-        ("preset protocols", "user overrides", "MCP prompts +", "resources"),
+        5.9,
+        5.25,
+        1.95,
+        2.15,
+        "guidelines (12)",
+        ("preset protocols", "workspace overrides", "MCP prompts", "MCP resources"),
         fc="#fef3c7",
         ec="#fcd34d",
         fs=9.5,
+        line_fs=8.0,
+        line_gap=0.31,
     )
     box(
         ax,
-        7.7,
-        4.35,
-        1.75,
-        2.1,
+        8.0,
+        5.25,
+        1.8,
+        2.15,
         "viewer",
-        ("PNG for agents", "HTML for humans", "renderer plugins", "NiiVue 3D"),
+        ("PNG for agents", "HTML for humans", "reports", "renderer plugins", "NiiVue 3D"),
         fc="#ede9fe",
         ec="#c4b5fd",
         fs=9.5,
+        line_fs=8.0,
+        line_gap=0.31,
     )
-    # core
+    # --- core
     box(
         ax,
         3.6,
-        2.55,
-        6.0,
-        1.25,
+        2.95,
+        6.4,
+        1.75,
         "core",
         (
-            "MedicalImage: NIfTI · DICOM · NRRD · MetaImage · PNG/JPEG",
+            "MedicalImage: NIfTI · DICOM · NRRD · MetaImage · PNG / JPEG",
             "native voxel coordinates · windowing · masks · metrics · prompts",
+            "resampling · registration · features · meshes",
         ),
         fc="#ffffff",
         ec="#94a3b8",
         fs=10.5,
+        line_fs=8.4,
+        line_gap=0.34,
     )
-    # zoo / runners
-    box(ax, 3.6, 0.35, 6.0, 1.85, "model zoo + job contract", (), fc="#ffffff", ec="#94a3b8", fs=10.5)
+    # --- zoo + runners
+    box(ax, 3.6, 0.35, 6.4, 2.3, "model zoo + job contract", (), fc="#ffffff", ec="#94a3b8", fs=10.5)
     ax.text(
-        6.6,
-        1.68,
-        "request.json  →  outputs/  →  response.json",
+        6.8,
+        1.98,
+        "request.json  →  inputs/  →  outputs/  →  response.json   (identical for every backend)",
         ha="center",
         va="top",
-        fontsize=8.2,
+        fontsize=8.0,
         color="#64748b",
         zorder=3,
     )
-    box(ax, 3.8, 0.5, 1.35, 1.0, "local", ("pip extras · venv",), fc="#dcfce7", ec="#86efac", fs=9.5)
-    box(ax, 5.3, 0.5, 1.35, 1.0, "docker", ("GHCR · --gpus",), fc="#dcfce7", ec="#86efac", fs=9.5)
-    box(ax, 6.8, 0.5, 1.35, 1.0, "apptainer", ("HPC · .def/.sif",), fc="#dcfce7", ec="#86efac", fs=9.5)
-    box(ax, 8.3, 0.5, 1.1, 1.0, "yours", ("manifest+run.py",), fc="#fee2e2", ec="#fca5a5", fs=9.0)
-    # adapters column
-    box(ax, 10.3, 0.35, 2.6, 3.45, "adapters (containerized)", (), fc="#ffffff", ec="#94a3b8", fs=10.5)
-    for i, (name, sub) in enumerate(
-        (
-            ("medsam2 / sam2", "promptable, 2D + 3D"),
-            ("totalsegmentator", "117 CT structures"),
-            ("classical", "threshold · region grow"),
-            ("_template", "add your own"),
-        )
+    for x, w, name, sub, fc, ec in (
+        (3.8, 1.42, "local", "pip extras / venv", "#dcfce7", "#86efac"),
+        (5.32, 1.42, "docker", "GHCR · --gpus all", "#dcfce7", "#86efac"),
+        (6.84, 1.42, "apptainer", "HPC · .def / .sif", "#dcfce7", "#86efac"),
+        (8.36, 1.45, "wrapped image", "official images", "#fee2e2", "#fca5a5"),
     ):
-        y0 = 2.6 - i * 0.72
-        ax.add_patch(
-            FancyBboxPatch(
-                (10.5, y0),
-                2.2,
-                0.66,
-                boxstyle="round,pad=0,rounding_size=0.12",
-                fc="#f8fafc",
-                ec="#cbd5e1",
-                lw=1.2,
-                zorder=3,
-            )
-        )
-        ax.text(
-            11.6,
-            y0 + 0.45,
-            name,
-            ha="center",
-            va="center",
-            fontsize=9.2,
-            fontweight="bold",
-            color=INK,
-            zorder=5,
-        )
-        ax.text(11.6, y0 + 0.19, sub, ha="center", va="center", fontsize=7.6, color="#64748b", zorder=5)
-    # data
+        small_box(ax, x, 0.5, w, 1.1, name, sub, fc=fc, ec=ec, name_fs=9.6, sub_fs=7.4)
+    # --- right column: workspace + adapters
     box(
         ax,
-        10.3,
-        4.15,
-        2.6,
-        2.85,
+        10.6,
+        5.05,
+        3.3,
+        2.9,
         "workspace (local disk)",
         (
             "images · masks",
             "omm_outputs/<run>/",
-            "  request.json · outputs/",
-            "  response.json · log.txt",
+            "request.json · outputs/",
+            "response.json · log.txt",
             "provenance.jsonl",
             "reports · viewers",
         ),
         fc="#fff7ed",
         ec="#fdba74",
+        fs=10.5,
+        line_fs=8.2,
+        line_gap=0.33,
     )
-    # arrows
-    arrow(ax, 2.9, 6.1, 3.6, 6.1, "MCP")
-    arrow(ax, 6.6, 4.15, 6.6, 3.8)
-    arrow(ax, 6.6, 2.55, 6.6, 2.2)
-    arrow(ax, 9.6, 1.3, 10.3, 1.3, "runs")
-    arrow(ax, 9.6, 5.6, 10.3, 5.6, "reads / writes")
-    arrow(ax, 10.3, 3.0, 9.65, 3.0, "masks", ls="--")
+    box(
+        ax,
+        10.6,
+        0.35,
+        3.3,
+        4.25,
+        "adapters",
+        (),
+        fc="#ffffff",
+        ec="#94a3b8",
+        fs=10.5,
+    )
+    adapters = (
+        ("medsam2 / sam2", "point + box prompts"),
+        ("voxtell", "free-text prompts"),
+        ("totalsegmentator", "117 CT structures"),
+        ("lungmask", "lungs · lobes · LAA%"),
+        ("hdbet", "MRI brain extraction"),
+        ("synthstrip", "FreeSurfer image"),
+        ("nnunet", "any nnU-Net model"),
+        ("monai", "model-zoo bundles"),
+        ("torchxrayvision", "chest X-ray findings"),
+        ("classical", "threshold · region grow"),
+    )
+    col_w, row_h, gap = 1.52, 0.6, 0.07
+    for i, (name, sub) in enumerate(adapters):
+        col, row = i % 2, i // 2
+        x = 10.73 + col * (col_w + 0.1)
+        y = 4.6 - 0.5 - row_h - row * (row_h + gap)
+        small_box(
+            ax,
+            x,
+            y,
+            col_w,
+            row_h,
+            name,
+            sub,
+            fc="#f8fafc",
+            ec="#cbd5e1",
+            name_fs=8.0,
+            sub_fs=6.8,
+        )
     ax.text(
-        0.3,
-        4.75,
-        "Everything runs locally:\nimages never leave\nthe machine.",
-        fontsize=8.6,
-        color="#475569",
-        va="top",
+        12.25,
+        0.52,
+        "+ your own model: copy zoo/_template",
+        ha="center",
+        va="center",
+        fontsize=7.6,
+        color="#b91c1c",
+        zorder=5,
     )
-    ax.text(
-        0.3,
-        3.35,
-        "Three pillars\n1. containerized models\n2. preset / custom guidelines\n3. code-customisable viewer",
-        fontsize=8.6,
-        color="#475569",
-        va="top",
-    )
+    # --- arrows
+    arrow(ax, 3.0, 7.0, 3.6, 7.0, "MCP", text_dy=0.1)
+    arrow(ax, 6.8, 5.05, 6.8, 4.7)
+    arrow(ax, 6.8, 2.95, 6.8, 2.65)
+    arrow(ax, 10.0, 6.5, 10.6, 6.5, "files", text_dy=0.1)
+    arrow(ax, 10.0, 1.75, 10.6, 1.75, "runs", text_dy=0.1)
+    arrow(ax, 10.6, 0.95, 10.0, 0.95, "masks", ls="--", text_dy=0.1)
     fig.savefig(HERE / "architecture.png", bbox_inches="tight", pad_inches=0.15, facecolor=PAPER)
     fig.savefig(HERE / "architecture.svg", bbox_inches="tight", pad_inches=0.15, facecolor=PAPER)
     plt.close(fig)

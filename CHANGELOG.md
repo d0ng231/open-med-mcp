@@ -8,7 +8,7 @@ Initial public release.
   `omm://conventions` resources.
 * Model zoo with a uniform job-directory contract and three execution backends (local Python,
   Docker, Apptainer), including a *wrapped image* mode for official third-party containers:
-  `medsam2`, `sam2` (SAM 2.1), `totalsegmentator`, `lungmask`, `hdbet` (HD-BET), `synthstrip`
+  `medsam2`, `sam2` (SAM 2.1), `voxtell` (free-text prompts), `totalsegmentator`, `lungmask`, `hdbet` (HD-BET), `synthstrip`
   (FreeSurfer container), `nnunet` (any nnU-Net v2 model), `monai` (MONAI Model Zoo bundles),
   `torchxrayvision` (chest X-ray classification), `classical` (thresholds / region growing),
   and an adapter template.

@@ -5,7 +5,7 @@ summary: End-to-end protocol for 3D CT segmentation - inspect, choose automatic 
 tags: [segmentation, ct, 3d, organ, lesion, volume]
 modalities: [CT]
 tasks: [segmentation]
-models: [totalsegmentator, medsam2, classical]
+models: [totalsegmentator, voxtell, medsam2, classical]
 version: 1
 ---
 ## 1. Inspect
@@ -17,8 +17,9 @@ version: 1
 ## 2. Choose the strategy
 | target | first choice | fallback |
 |---|---|---|
-| named anatomy (liver, spleen, kidneys, vertebrae, aorta, lungs ...) | `totalsegmentator` with `roi_subset` | `medsam2` with a box |
-| focal lesion / tumour / nodule / cyst | `medsam2` (variant `medsam2_ct_lesion` for lesions) with a box on the slice where it is largest | `classical` region growing with a seed |
+| named anatomy (liver, spleen, kidneys, vertebrae, aorta, lungs ...) | `totalsegmentator` with `roi_subset` | `voxtell` with a text prompt ("left kidney"), or `medsam2` with a box |
+| focal lesion / tumour / nodule / cyst | `medsam2` (variant `medsam2_ct_lesion` for lesions) with a box on the slice where it is largest | `voxtell` with a descriptive prompt ("liver tumor"); `classical` region growing with a seed |
+| structure without a TotalSegmentator label (e.g. "gallbladder stone", "pancreatic duct") | `voxtell` text prompt, then QC | `medsam2` box |
 | air / bone / high-contrast region | `classical` threshold (lung: -1000..-500 HU, bone: > 250 HU) | - |
 
 Use `fast: true` for TotalSegmentator on CPU or for a quick first pass; rerun at full resolution for
@@ -33,6 +34,9 @@ final numbers.
   `segment(ct, model="medsam2", prompts=[{"type": "box", "coords": [x0, y0, x1, y1], "slice": z}], plane="axial")`.
   A box should enclose the structure with a 2-5 voxel margin. Prefer a box over single points.
   For long structures set `max_slices` to a plausible extent to avoid drift.
+* Text: `segment(ct, model="voxtell", prompts=[{"type": "text", "text": "liver"}, {"type": "text", "text": "spleen"}])`.
+  One prompt per structure, specific wording ("right kidney"), and always inspect the preview - an
+  unknown concept can return an empty or wrong mask (the response warns about empty prompts).
 
 ## 4. Quality control (mandatory)
 1. `render_view(ct, masks=[mask], layout="three-plane", window="soft-tissue")` - is the shape anatomically

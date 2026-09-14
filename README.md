@@ -19,7 +19,7 @@ It is built on three pillars:
 
 | pillar | what it means |
 |---|---|
-| **1. Containerized specialised models** | Every model is an *adapter* with a manifest, a `run.py` and a Dockerfile, speaking one tiny job-directory contract. Run it locally (pip extra), in Docker (GHCR images) or in Apptainer on an HPC cluster - the agent does not care which. Ships with **MedSAM2**, **SAM 2.1**, **TotalSegmentator**, **lungmask**, **HD-BET**, **SynthStrip** (official FreeSurfer image), **nnU-Net** (any trained model), **MONAI Model Zoo bundles**, **TorchXRayVision** and a classical baseline; adding your own model is a folder with three files, and existing third-party images can be wrapped with a command template. |
+| **1. Containerized specialised models** | Every model is an *adapter* with a manifest, a `run.py` and a Dockerfile, speaking one tiny job-directory contract. Run it locally (pip extra), in Docker (GHCR images) or in Apptainer on an HPC cluster - the agent does not care which. Ships with **MedSAM2**, **SAM 2.1**, **VoxTell** (free-text prompts), **TotalSegmentator**, **lungmask**, **HD-BET**, **SynthStrip** (official FreeSurfer image), **nnU-Net** (any trained model), **MONAI Model Zoo bundles**, **TorchXRayVision** and a classical baseline; adding your own model is a folder with three files, and existing third-party images can be wrapped with a command template. |
 | **2. Preset / custom guidelines** | Markdown protocols with YAML front matter that tell an agent *how* to do a task well (which model, which window, what to check, what to report). Presets ship with the package; drop your own into a folder to override or extend them. They are exposed as MCP prompts and resources. |
 | **3. Modular, code-customisable viewer** | Agents see: `render_view` returns PNGs (single slice, three planes, montage) with native voxel coordinate grids so prompts can be read off the picture. Humans see: a self-contained HTML slice viewer (click to get prompt coordinates), Markdown/HTML reports and an optional NiiVue 3D page. Renderers are pluggable. |
 
@@ -92,6 +92,7 @@ Full reference with every parameter: [docs/tools.md](docs/tools.md). Coordinate 
 |---|---|---|---|---|
 | `medsam2` | MedSAM2: promptable 2D + 3D segmentation (slice propagation), medical fine-tune of SAM 2.1 | CT, MR, PET, US, endoscopy | box, points | local `[sam2]`, Docker, Apptainer |
 | `sam2` | SAM 2.1 tiny / small / base+ / large | any | box, points | local `[sam2]`, Docker, Apptainer |
+| `voxtell` | VoxTell (CVPR 2026): **free-text** prompts ("liver", "left kidney", "liver tumor") -> 3D masks | CT, MR, PET | text | local `[voxtell]`, Docker, Apptainer |
 | `totalsegmentator` | 117 CT structures, MR variant, vessels, body regions ... | CT, MR | - | local `[totalsegmentator]`, Docker, Apptainer |
 | `lungmask` | lungs (R231) and lobes (LTRCLobes) + LAA% emphysema index | CT | - | local `[lungmask]`, Docker, Apptainer |
 | `hdbet` | HD-BET 2.0 brain extraction (mask + stripped image) | MR | - | local `[hdbet]`, Docker, Apptainer |
@@ -109,6 +110,7 @@ open-med-mcp models pull synthstrip --engine apptainer   # HPC: official image -
 open-med-mcp models build lungmask --engine apptainer    # or build from the Dockerfile (converted to a .def)
 open-med-mcp run lungmask --image chest_ct.nii.gz --task lobes
 open-med-mcp run medsam2 --image ct.nii.gz --prompts '[{"type":"box","coords":[60,80,20,140,170,20]}]'
+open-med-mcp run voxtell --image ct.nii.gz --prompts '[{"type":"text","text":"liver"},{"type":"text","text":"spleen"}]'
 ```
 
 **Adding a model** = copy `src/open_med_mcp/zoo/_template/`, edit the manifest, implement `run.py`
@@ -138,21 +140,21 @@ are also exposed as MCP prompts (`/mcp__open-med-mcp__segmentation-3d-ct` in Cla
 * Custom renderers: implement `render(image, masks, spec)`, register with `@register_renderer` or
   the `open_med_mcp.renderers` entry point, and pass `renderer="yourname"`. See [docs/viewer.md](docs/viewer.md).
 
-<p align="center">
-  <img src="docs/assets/screenshots/compare_masks.png" alt="compare_masks contour overlay" width="860"><br>
-  <em><code>compare_masks</code>: TotalSegmentator (red) vs MedSAM2 (blue) liver contours, with Dice/HD95 in the JSON part of the result.</em>
-</p>
 
 ## Gallery
 
-| automatic anatomy: `run_model("totalsegmentator", ...)` | skull stripping: `run_model("hdbet", ...)` vs `synthstrip` |
+| automatic anatomy: `run_model("totalsegmentator", ...)` | free-text prompts: `segment(ct, model="voxtell", prompts=[{"type": "text", "text": "liver"}, ...])` |
 |---|---|
-| ![TotalSegmentator montage](docs/assets/screenshots/totalsegmentator_montage.png) | ![brain masks](docs/assets/screenshots/brain_extraction.png) |
-| **2D promptable: `segment("slice.png", model="medsam2", prompts=[box])`** | **chest X-ray: `classify_image("cxr.png")`** |
-| ![2D MedSAM2](docs/assets/screenshots/segment_2d.png) | ![CXR classification](docs/assets/screenshots/cxr_classification.png) |
+| ![TotalSegmentator montage](docs/assets/screenshots/totalsegmentator_montage.png) | ![VoxTell text prompts](docs/assets/screenshots/voxtell_text_prompts.png) |
+| **skull stripping: `run_model("hdbet", ...)` vs `synthstrip`** | **chest X-ray: `classify_image("cxr.png")`** |
+| ![brain masks](docs/assets/screenshots/brain_extraction.png) | ![CXR classification](docs/assets/screenshots/cxr_classification.png) |
+| **2D promptable: `segment("slice.png", model="medsam2", prompts=[box])`** | **agent QC view: `compare_masks(...)`** |
+| ![2D MedSAM2](docs/assets/screenshots/segment_2d.png) | ![compare masks](docs/assets/screenshots/compare_masks.png) |
 
 All figures on this page are real outputs of the tools on public sample data (a small abdominal CT,
-the MNI152 template, a NIH chest X-ray); see `examples/get_sample_data.sh`.
+the MNI152 template, a NIH chest X-ray); see `examples/get_sample_data.sh`. On that CT, VoxTell's
+text prompts agree with TotalSegmentator at Dice 0.94 (liver), 0.91 (spleen, left kidney), 0.89
+(right kidney, L1) and 0.81 (aorta).
 
 ## Configuration
 

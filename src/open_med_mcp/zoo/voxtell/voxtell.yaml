@@ -1,0 +1,44 @@
+name: voxtell
+display_name: VoxTell (free-text promptable 3D segmentation, DKFZ)
+description: >-
+  VoxTell (Rokuss et al., CVPR 2026) segments 3D CT/MRI/PET volumes from free-text prompts -
+  single words ("liver", "left kidney"), anatomy plus pathology ("liver tumor", "vertebra L3"), or
+  full sentences. Trained on 158 public datasets (62k volumes). Give one prompt per structure; the
+  output label i corresponds to prompt i. Needs a GPU (about 10 s per prompt set) and, on first
+  use, downloads the checkpoint (1.7 GB) and the Qwen3-Embedding-4B text encoder (about 8 GB).
+version: "0.1"
+category: segmentation
+tasks: [segment, download]
+default_task: segment
+task_descriptions:
+  segment: "Segment every text prompt; label i = prompt i"
+  download: "Fetch the checkpoint and text encoder without running inference"
+modalities: [CT, MR, PET]
+dims: [3]
+prompt_types: [text]
+inputs:
+  image: {kind: image, required: false, description: "3D volume as NIfTI (CT, MRI or PET)"}
+outputs:
+  mask: {kind: mask, description: "Multi-label map; label i = prompt i (later prompts overwrite earlier ones where they overlap)"}
+params:
+  text: {type: array, items: string, description: "Text prompts (alternative to prompts of type 'text' via the segment tool), e.g. [\"liver\", \"spleen\", \"right kidney\"]"}
+  prompts: {type: array, items: object, description: "Wire-format prompts (filled in by the `segment` tool)"}
+  variant: {type: string, default: voxtell_v1.1, choices: [voxtell_v1.1, voxtell_v1.0], description: "Checkpoint version"}
+  text_encoder: {type: string, default: Qwen/Qwen3-Embedding-4B, description: "Hugging Face id of the text encoder (as used for training)"}
+weights: []
+container:
+  gpu: required
+  shm_size: 8g
+local:
+  entrypoint: run.py
+  requires: [voxtell, torch, nnunetv2, transformers]
+  extra: voxtell
+runners: [local, docker, apptainer]
+license: Apache-2.0 (code); checkpoint on Hugging Face (mrokuss/VoxTell), text encoder Qwen3-Embedding-4B (Apache-2.0)
+homepage: https://github.com/MIC-DKFZ/VoxTell
+citation: "Rokuss, Langenberg et al., VoxTell: Free-Text Promptable Universal 3D Medical Image Segmentation, CVPR 2026 (arXiv:2511.11450)"
+notes: >-
+  Prompts are matched semantically, so be specific ("left kidney" rather than "kidney" when one
+  side is wanted; "liver tumor" for lesions). Always check the preview: unknown concepts may yield
+  empty or wrong masks. Works best on volumes with correct orientation metadata (NIfTI).
+tags: [promptable, text, vision-language, ct, mri, pet, anatomy, lesions, gpu]

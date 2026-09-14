@@ -15,12 +15,18 @@ class Prompt(BaseModel):
     * ``point``: ``coords=[x, y]`` (2D image) or ``[x, y, z]`` (3D); ``label`` 1 = foreground, 0 = background.
     * ``box``: ``coords=[x0, y0, x1, y1]`` on ``slice`` (3D) or ``[x0, y0, z0, x1, y1, z1]`` with
       ``z0 == z1`` for a box on a single axial slice (or the plane's stacking axis).
+    * ``text``: ``text="liver"`` for free-text promptable models (VoxTell); one prompt per structure.
 
     For 3D images a 2D prompt is placed on ``slice`` along the ``plane`` used for propagation.
     """
 
-    type: Literal["point", "box"]
-    coords: list[float] = Field(description="Native voxel coordinates, see docs/coordinates.md")
+    type: Literal["point", "box", "text"]
+    coords: list[float] = Field(
+        default_factory=list, description="Native voxel coordinates (point/box), see docs/coordinates.md"
+    )
+    text: str | None = Field(
+        default=None, description="Free-text prompt (type 'text'), e.g. 'liver' or 'left kidney'"
+    )
     label: int = Field(
         default=1, description="For points: 1 = foreground (include), 0 = background (exclude)"
     )
@@ -32,6 +38,10 @@ class Prompt(BaseModel):
     @model_validator(mode="after")
     def _check(self) -> Prompt:
         n = len(self.coords)
+        if self.type == "text":
+            if not (self.text or "").strip():
+                raise ValueError("text prompts need a non-empty `text`")
+            return self
         if self.type == "point" and n not in (2, 3):
             raise ValueError("point coords must be [x, y] or [x, y, z]")
         if self.type == "box" and n not in (4, 6):
@@ -50,6 +60,16 @@ def normalize_prompts(
     """
     items = [p if isinstance(p, Prompt) else Prompt.model_validate(p) for p in prompts]
     out: list[dict[str, Any]] = []
+    text_items = [p for p in items if p.type == "text"]
+    items = [p for p in items if p.type != "text"]
+    for i, p in enumerate(text_items):
+        out.append(
+            {
+                "type": "text",
+                "text": (p.text or "").strip(),
+                "object_id": p.object_id if p.object_id != 1 or i == 0 else i + 1,
+            }
+        )
     if image.is_2d:
         for p in items:
             c = list(p.coords)

@@ -49,6 +49,6 @@ On a SLURM cluster (login node without GPU; L40S/H100 nodes without Docker or Ap
   Dockerfile (CPU); `synthstrip` through the official image pulled with Apptainer (CPU).
 * `medsam2`, `sam2` (2D + 3D, single and multi-object, axial and coronal propagation),
   `totalsegmentator` (fast and full resolution), `lungmask` (lungs, lobes), `hdbet`, `nnunet`
-  (TotalSegmentator's 3 mm model as a generic nnU-Net folder), `monai` (spleen bundle) and
-  `torchxrayvision` through the local runner in a GPU venv; `torchxrayvision`, `lungmask` and
-  `monai` also on CPU.
+  (TotalSegmentator's 3 mm model as a generic nnU-Net folder), `monai` (spleen bundle),
+  `voxtell` (six text prompts; Dice 0.81-0.94 against TotalSegmentator) and `torchxrayvision`
+  through the local runner in GPU venvs; `torchxrayvision`, `lungmask` and `monai` also on CPU.

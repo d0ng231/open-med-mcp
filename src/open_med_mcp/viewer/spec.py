@@ -70,3 +70,13 @@ class ViewSpec(BaseModel):
     show_legend: bool = True
     show_title: bool = True
     background: str = "#000000"
+    font_scale: float = Field(
+        default=1.0,
+        ge=0.5,
+        le=3.0,
+        description="Multiply all font sizes (use >1 for figures that will be downscaled)",
+    )
+    panel_inches: float | None = Field(
+        default=None,
+        description="Edge length of each (square) panel in inches; default depends on the layout",
+    )

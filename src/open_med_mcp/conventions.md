@@ -20,11 +20,12 @@
 {"type": "point", "coords": [x, y], "slice": z, "label": 0}
 {"type": "box",   "coords": [x0, y0, x1, y1], "slice": z}
 {"type": "box",   "coords": [x0, y0, z0, x1, y1, z1]}
+{"type": "text",  "text": "liver"}
 ```
 `label` 1 = include, 0 = exclude (points only). `object_id` groups prompts of one object; the output
 label map uses the object id as label value. For 3D images a 2D prompt needs `slice`, interpreted
 along the `plane` given to `segment` (default `axial`). Boxes work best; add negative points to
-remove leakage.
+remove leakage. Text prompts (VoxTell) take one phrase per structure; label i of the result is prompt i.
 
 ## Masks
 * Label maps are integer images with `0` = background. 3D masks are saved as `.nii.gz` with the

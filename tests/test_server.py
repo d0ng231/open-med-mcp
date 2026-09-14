@@ -158,6 +158,12 @@ async def test_2d_and_errors(client: Client, blob_png):
     assert r.structured_content["foreground"]["dice"] > 0.95
     r = await client.call_tool("segment", {"image": "blob.png", "model": "medsam2"})
     assert r.is_error and "needs prompts" in r.content[0].text
+    r = await client.call_tool(
+        "segment", {"image": "blob.png", "model": "medsam2", "prompts": [{"type": "text", "text": "liver"}]}
+    )
+    assert r.is_error and "accepts" in r.content[0].text
+    r = await client.call_tool("segment", {"image": "blob.png", "model": "voxtell"})
+    assert r.is_error and "text" in r.content[0].text
     r = await client.call_tool("segment", {"image": "missing.png", "model": "classical"})
     assert r.is_error and "does not exist" in r.content[0].text
     r = await client.call_tool("describe_model", {"name": "nope"})
