@@ -257,7 +257,10 @@ async def test_workspace_plugin_and_scaffold(isolated_settings, ct_volume):
 
 
 def test_cli_client_configs_parse(isolated_settings):
-    import tomllib
+    try:
+        import tomllib  # Python 3.11+
+    except ModuleNotFoundError:  # pragma: no cover - Python 3.10
+        tomllib = None
     from typer.testing import CliRunner
 
     from open_med_mcp.cli import app
@@ -266,7 +269,11 @@ def test_cli_client_configs_parse(isolated_settings):
     out = runner.invoke(app, ["client-config", "claude-desktop"]).stdout
     json.loads(out[: out.rindex("}") + 1])
     out = runner.invoke(app, ["client-config", "codex"]).stdout
-    tomllib.loads(out[out.index("[mcp_servers") :])
+    toml_text = out[out.index("[mcp_servers") :]
+    if tomllib is not None:
+        tomllib.loads(toml_text)
+    else:
+        assert "[mcp_servers.open_med_mcp]" in toml_text
     r = runner.invoke(app, ["install", "codex", "--dry-run"])
     assert r.exit_code == 0 and "codex mcp add open-med-mcp" in r.stdout
     r = runner.invoke(app, ["new", "plugin", "extra-tool"])
