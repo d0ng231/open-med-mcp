@@ -303,13 +303,13 @@ def save_architecture() -> None:
         5.25,
         1.95,
         2.15,
-        "tools (31)",
+        "tools (44)",
         (
             "inspect · DICOM · convert",
-            "segment · run_model · batch",
-            "masks · metrics · features",
-            "resample · register · N4",
-            "render_view · report",
+            "segment · classify · detect",
+            "ask_vlm · radiomics · batch",
+            "RECIST · Fleischner · TI-RADS",
+            "resample · register · report",
         ),
         fc="#f1f5f9",
         ec="#cbd5e1",
@@ -323,8 +323,8 @@ def save_architecture() -> None:
         5.25,
         1.95,
         2.15,
-        "guidelines (12)",
-        ("preset protocols", "workspace overrides", "MCP prompts", "MCP resources"),
+        "guidelines (20)",
+        ("workflow protocols", "clinical criteria", "workspace overrides", "MCP prompts + resources"),
         fc="#fef3c7",
         ec="#fcd34d",
         fs=9.5,
@@ -426,10 +426,12 @@ def save_architecture() -> None:
         ("synthstrip", "FreeSurfer image"),
         ("nnunet", "any nnU-Net model"),
         ("monai", "model-zoo bundles"),
-        ("torchxrayvision", "chest X-ray findings"),
+        ("torchxrayvision", "CXR findings"),
+        ("vlm", "MedGemma · Q&A"),
+        ("radiomics", "pyradiomics features"),
         ("classical", "threshold · region grow"),
     )
-    col_w, row_h, gap = 1.52, 0.6, 0.07
+    col_w, row_h, gap = 1.52, 0.52, 0.06
     for i, (name, sub) in enumerate(adapters):
         col, row = i % 2, i // 2
         x = 10.73 + col * (col_w + 0.1)

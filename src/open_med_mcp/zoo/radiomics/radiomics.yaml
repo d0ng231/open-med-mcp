@@ -1,0 +1,46 @@
+name: radiomics
+display_name: pyradiomics (IBSI-compliant radiomic features)
+description: >-
+  Extracts the standard radiomic feature set from an image + mask with pyradiomics (van Griethuysen
+  et al., 2017): shape, first order, GLCM, GLRLM, GLSZM, GLDM and NGTDM, with optional resampling,
+  intensity discretisation and wavelet/LoG filters. Runs per label. The de-facto standard used in
+  thousands of radiomics papers; CPU only, seconds per ROI.
+version: "0.1"
+category: features
+tasks: [extract]
+default_task: extract
+modalities: [CT, MR, PET, any]
+dims: [2, 3]
+prompt_types: []
+inputs:
+  image: {kind: image, required: true, description: "Image the mask was drawn on"}
+  mask: {kind: mask, required: true, description: "Label map in the image geometry"}
+outputs:
+  features: {kind: json, description: "features.json: {label: {feature_name: value}} plus a CSV twin"}
+params:
+  labels: {type: array, items: integer, description: "Labels to extract (default: all labels present)"}
+  bin_width: {type: number, default: 25, description: "Fixed bin width for discretisation (25 HU for CT; use bin_count for MRI)"}
+  bin_count: {type: integer, description: "Fixed bin count (overrides bin_width; recommended for uncalibrated MRI)"}
+  resample_spacing: {type: array, items: number, description: "Isotropic resampling before extraction, e.g. [1, 1, 1] (recommended for comparability)"}
+  normalize: {type: boolean, default: false, description: "Z-score normalise the image first (MRI)"}
+  feature_classes: {type: array, items: string, default: [shape, firstorder, glcm, glrlm, glszm, gldm, ngtdm], description: "Feature classes to enable"}
+  filters: {type: array, items: string, default: [], description: "Extra image filters: LoG, Wavelet, Square, SquareRoot, Logarithm, Exponential, Gradient"}
+  log_sigma: {type: array, items: number, default: [1.0, 2.0, 3.0], description: "Sigmas (mm) for the LoG filter"}
+  force_2d: {type: boolean, default: false, description: "Extract per-slice (2D) features"}
+  minimum_roi_voxels: {type: integer, default: 10}
+weights: []
+container:
+  gpu: none
+local:
+  entrypoint: run.py
+  requires: [radiomics]
+runners: [local, docker, apptainer]
+license: BSD-3-Clause
+homepage: https://github.com/AIM-Harvard/pyradiomics
+citation: "van Griethuysen et al., Computational Radiomics System to Decode the Radiographic Phenotype, Cancer Res 77:e104-e107 (2017)"
+notes: >-
+  pyradiomics 3.1 ships wheels for Python 3.7-3.9 with NumPy 1.x, so the local runner needs a
+  dedicated interpreter (uv venv --python 3.9; pip install 'numpy<2' pyradiomics) exposed as
+  OMM_ZOO_RADIOMICS_PYTHON, or use the container (python:3.9 base). Report the extraction settings
+  (bin width, resampling, filters) with the features - they change the values.
+tags: [radiomics, features, ibsi, ct, mri, pet, cpu]

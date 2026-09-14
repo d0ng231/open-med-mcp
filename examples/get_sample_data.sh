@@ -12,4 +12,5 @@ echo "downloaded sample/example_ct_sm.nii.gz, sample/mni152_t1.nii.gz, sample/ch
 echo "try:  open-med-mcp view sample/example_ct_sm.nii.gz --layout three-plane --window soft-tissue"
 echo "      open-med-mcp run lungmask --image sample/example_ct_sm.nii.gz"
 echo "      open-med-mcp run synthstrip --image sample/mni152_t1.nii.gz        # needs docker or apptainer"
-echo "      open-med-mcp run torchxrayvision --image sample/chest_xray.png"
+echo "      open-med-mcp run torchxrayvision --image sample/chest_xray.png --task segment   # anatomy -> cardiothoracic_ratio"
+echo "      open-med-mcp run radiomics --image sample/example_ct_sm.nii.gz --output ...   # needs a Python 3.9 venv"

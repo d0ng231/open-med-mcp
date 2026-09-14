@@ -12,8 +12,10 @@
 | `hdbet` | `hdbet` | preprocessing | `extract` | - | outputs `mask` and `brain` |
 | `synthstrip` | `synthstrip` | preprocessing | `strip` | - | **wrapped** official `freesurfer/synthstrip` image |
 | `nnunet` | `nnunet` | segmentation | `predict`, `install` | - | any nnU-Net v2 model folder / zip; multi-channel via `image_1`, `image_2` |
-| `monai` | `monai` | segmentation | `segment`, `download` | - | MONAI Model Zoo bundles; overrides via `overrides` |
-| `torchxrayvision` | `torchxrayvision` | classification | `classify` | - | JSON `predictions` output; `classify_image` renders a chart |
+| `monai` | `monai` | segmentation / detection | `segment`, `detect`, `download` | - | MONAI Model Zoo bundles; `detect` (RetinaNet, direct inference) returns boxes in native voxel coordinates + world-mm size |
+| `torchxrayvision` | `torchxrayvision` | classification | `classify`, `segment`, `age` | - | 18 findings; 14-structure anatomy mask; biological age |
+| `vlm` | `vlm` | vision-language | `ask`, `download` | text | MedGemma 4B default (gated), any HF image-text-to-text model; `ask_vlm` returns the shown image |
+| `radiomics` | `radiomics` | features | `extract` | - | pyradiomics per label; needs a Python 3.9 interpreter (`OMM_ZOO_RADIOMICS_PYTHON`) or the container |
 | `classical` | `classical` | segmentation | `threshold`, `otsu`, `multi_threshold`, `region_grow` | seeds | CPU, no weights |
 
 `open-med-mcp models info <name>` prints the manifest, the JSON schema of its parameters, weight
@@ -176,7 +178,8 @@ arguments), `{flag:<param>:<literal>}` (emitted when the parameter is truthy), `
 Images are published by `.github/workflows/containers.yml` to
 `ghcr.io/d0ng231/open-med-mcp-<adapter>:<version>`. Base images: `python:3.12-slim` (classical,
 torchxrayvision with CPU PyTorch), `pytorch/pytorch:2.5.1-cuda12.4-cudnn9-runtime` (sam2,
-totalsegmentator, lungmask, hdbet, nnunet, monai; `pytorch/pytorch:2.8.0-cuda12.6-cudnn9-runtime` for voxtell). Weights are never baked in; wrapped models use
+totalsegmentator, lungmask, hdbet, nnunet, monai, vlm; `pytorch/pytorch:2.8.0-cuda12.6-cudnn9-runtime` for voxtell;
+`python:3.9-slim` for radiomics). Weights are never baked in; wrapped models use
 the upstream image as is.
 
 Apptainer definitions are generated from the Dockerfiles by

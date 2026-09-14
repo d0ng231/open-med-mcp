@@ -9,7 +9,7 @@ server and the models.
 
 | layer | module | responsibility |
 |---|---|---|
-| **server / tools** | `open_med_mcp.server`, `open_med_mcp.tools.*` | MCP surface: 34 tools, guideline prompts, `guideline://`, `model://`, `omm://conventions` resources. Tools are thin: resolve paths, call core functions, package JSON + preview images into a `CallToolResult`. |
+| **server / tools** | `open_med_mcp.server`, `open_med_mcp.tools.*` | MCP surface: 44 tools, guideline prompts, `guideline://`, `model://`, `omm://conventions` resources. Tools are thin: resolve paths, call core functions, package JSON + preview images into a `CallToolResult`. |
 | **core** | `open_med_mcp.core.*` | `MedicalImage` (SimpleITK/Pillow I/O, ITK geometry, plane <-> axis mapping), windowing, masks (stats, post-processing, prompt extraction), metrics, prompts, and processing (resampling, re-orientation, cropping, N4, registration, mask algebra, shape features, meshes, DICOM series). Pure functions; no MCP. |
 | **models** | `open_med_mcp.models.*` + `open_med_mcp.zoo/*` | Manifests (YAML), registry (bundled + user dirs), weights, the job contract, three runners (local / Docker / Apptainer), wrapped third-party images, Dockerfile -> Apptainer conversion, and the adapters themselves. |
 | **guidelines** | `open_med_mcp.guidelines.*` | Markdown + YAML front matter protocols, preset + user libraries, search. |

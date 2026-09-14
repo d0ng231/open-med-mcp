@@ -423,8 +423,10 @@ def register(server: MCPServer) -> None:
         statistics and a preview. Look at the preview, then refine."""
         settings = get_settings()
         m = get_registry(settings).get(model)
-        if m.category not in ("segmentation", "preprocessing"):
-            raise ValueError(f"model {model!r} is a {m.category} model; use run_model or classify_image")
+        if "mask" not in m.outputs:
+            raise ValueError(
+                f"model {model!r} ({m.category}) does not produce a mask; use run_model, classify_image, ask_vlm or detect"
+            )
         p = resolve(image)
         img = load_image_cached(p)
         params = dict(params or {})
@@ -600,6 +602,118 @@ def register(server: MCPServer) -> None:
             )
 
         return await _run_with_progress(ctx, f"batch {model}:{task} ({len(paths)} cases)", work, wait)
+
+    @server.tool()
+    @tool_errors
+    async def ask_vlm(
+        image: Annotated[
+            str, Field(description="2D image (PNG/JPEG/DICOM) or 3D volume (one slice is shown)")
+        ],
+        prompt: Annotated[
+            str, Field(description="Question or instruction for the model")
+        ] = "Describe the key findings in this image.",
+        model_id: Annotated[
+            str | None,
+            Field(
+                description="Hugging Face image-text-to-text model (default: the vlm manifest default, MedGemma 4B; open alternative: Qwen/Qwen2.5-VL-3B-Instruct)"
+            ),
+        ] = None,
+        slice: Annotated[
+            int | None, Field(description="3D: slice index along `plane` (default: middle)")
+        ] = None,
+        plane: Plane = "axial",
+        window: Annotated[
+            str | None, Field(description="3D: window preset (soft-tissue, lung, bone, brain, auto)")
+        ] = None,
+        max_new_tokens: Annotated[int, Field(ge=16, le=4096)] = 400,
+        system_prompt: str | None = None,
+        show_image: Annotated[
+            bool, Field(description="Return the exact image the model saw, so you can verify the answer")
+        ] = True,
+        ctx: Context | None = None,
+    ) -> CallToolResult:
+        """Ask a vision-language model (MedGemma by default) about an image: findings, a question,
+        a report draft. The answer is model text for research use - verify it against the image."""
+        settings = get_settings()
+        m = get_registry(settings).get("vlm")
+        p = resolve(image)
+        params: dict[str, Any] = {"prompt": prompt, "max_new_tokens": max_new_tokens, "plane": plane}
+        if model_id:
+            params["model_id"] = model_id
+        if slice is not None:
+            params["slice"] = slice
+        if window:
+            params["window"] = window
+        if system_prompt is not None:
+            params["system_prompt"] = system_prompt
+        res = await _run_with_progress(
+            ctx,
+            f"vlm:{params.get('model_id', 'default')}",
+            lambda state: execute_model(m, "ask", {"image": p}, params, None, False, "ask_vlm", state=state),
+            True,
+        )
+        if res.is_error:
+            return res
+        payload = dict(res.structured_content or {})
+        answer = (payload.get("results") or {}).get("answer") or {}
+        payload["answer"] = answer.get("answer")
+        images = []
+        if show_image and payload.get("outputs", {}).get("shown"):
+            shown = resolve(payload["outputs"]["shown"])
+            images.append(RenderResult(shown.read_bytes(), "image/png", ".png", {"kind": "vlm-input"}))
+        return result(payload, images)
+
+    @server.tool()
+    @tool_errors
+    async def detect(
+        image: Annotated[str, Field(description="3D image (e.g. chest CT for lung nodules)")],
+        model: Annotated[str, Field(description="Detection-capable model")] = "monai",
+        params: Annotated[
+            dict[str, Any] | None,
+            Field(description="e.g. {'bundle': 'lung_nodule_ct_detection', 'score_threshold': 0.3}"),
+        ] = None,
+        max_boxes_in_preview: Annotated[int, Field(ge=0, le=20)] = 5,
+        preview: bool = True,
+        wait: bool = True,
+        ctx: Context | None = None,
+    ) -> CallToolResult:
+        """Run an object-detection model (default: MONAI lung_nodule_ct_detection) and return
+        scored boxes in native voxel coordinates, with the top boxes drawn on a preview."""
+        settings = get_settings()
+        m = get_registry(settings).get(model)
+        if "detect" not in m.tasks:
+            raise ValueError(f"model {model!r} has no detect task")
+        p = resolve(image)
+        pr = dict(params or {})
+        pr.setdefault("bundle", "lung_nodule_ct_detection")
+        res = await _run_with_progress(
+            ctx,
+            f"{model}:detect",
+            lambda state: execute_model(m, "detect", {"image": p}, pr, None, False, "detect", state=state),
+            wait,
+        )
+        if res.is_error or not wait:
+            return res
+        payload = dict(res.structured_content or {})
+        dets = ((payload.get("results") or {}).get("detections") or {}).get("detections") or []
+        payload["n_detections"] = len(dets)
+        images = []
+        if preview and dets and max_boxes_in_preview:
+            img = load_image_cached(p)
+            top = dets[:max_boxes_in_preview]
+            prompts = [Prompt(type="box", coords=[float(v) for v in d["box_xyz"]]) for d in top]
+            center_slice = int(round(top[0]["center_xyz"][img.index_axis_for_plane("axial")]))
+            spec = ViewSpec(
+                image=str(p),
+                plane="axial",
+                slices=[center_slice],
+                window="lung",
+                prompts=prompts,
+                title=f"{len(dets)} detection(s); top score {top[0]['score']}",
+                max_px=settings.preview_max_px,
+            )
+            images.append(get_renderer("png").render(img, [], spec))
+        return result(payload, images)
 
     @server.tool(annotations=READ_ONLY)
     @tool_errors

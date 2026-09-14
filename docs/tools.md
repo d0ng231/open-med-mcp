@@ -137,6 +137,37 @@ Run one model over many images (cohort processing). Returns a per-case table wit
 | `continue_on_error` | boolean | `True` |  |
 | `wait` | boolean | `True` | false = background job; poll get_job(job_id) |
 
+### `ask_vlm`
+
+Ask a vision-language model (MedGemma by default) about an image: findings, a question,
+        a report draft. The answer is model text for research use - verify it against the image.
+
+| parameter | type | default | description |
+|---|---|---|---|
+| `image` | string | *required* | 2D image (PNG/JPEG/DICOM) or 3D volume (one slice is shown) |
+| `prompt` | string | `Describe the key findings in this image.` | Question or instruction for the model |
+| `model_id` | string | `None` | Hugging Face image-text-to-text model (default: the vlm manifest default, MedGemma 4B; open alternative: Qwen/Qwen2.5-VL-3B-Instruct) |
+| `slice` | integer | `None` | 3D: slice index along `plane` (default: middle) |
+| `plane` | `axial` \| `coronal` \| `sagittal` | `axial` |  |
+| `window` | string | `None` | 3D: window preset (soft-tissue, lung, bone, brain, auto) |
+| `max_new_tokens` | integer | `400` |  |
+| `system_prompt` | string | `None` |  |
+| `show_image` | boolean | `True` | Return the exact image the model saw, so you can verify the answer |
+
+### `detect`
+
+Run an object-detection model (default: MONAI lung_nodule_ct_detection) and return
+        scored boxes in native voxel coordinates, with the top boxes drawn on a preview.
+
+| parameter | type | default | description |
+|---|---|---|---|
+| `image` | string | *required* | 3D image (e.g. chest CT for lung nodules) |
+| `model` | string | `monai` | Detection-capable model |
+| `params` | object | `None` | e.g. {'bundle': 'lung_nodule_ct_detection', 'score_threshold': 0.3} |
+| `max_boxes_in_preview` | integer | `5` |  |
+| `preview` | boolean | `True` |  |
+| `wait` | boolean | `True` |  |
+
 ### `get_job`
 
 Status of a background job; when it is done, the complete result of the original call
@@ -342,6 +373,118 @@ List every DICOM series in a folder with modality, description, slice count and 
 
 *Read-only.*
 
+### `measure_lesion`
+
+RECIST 1.1-style measurements per lesion: longest in-plane diameter, perpendicular short
+        axis, the slice where it was measured, endpoints (native voxel coordinates), volume, and
+        whether the lesion qualifies as a measurable target lesion.
+
+| parameter | type | default | description |
+|---|---|---|---|
+| `mask` | string | *required* | Label map of the lesion(s) |
+| `image` | string | `None` | Image for intensity statistics and the preview |
+| `labels` | array of integer | `None` | Label ids to measure (default: all) |
+| `plane` | `axial` \| `coronal` \| `sagittal` | `axial` | Plane in which diameters are measured (RECIST: axial) |
+| `preview` | boolean | `True` |  |
+
+*Read-only.*
+
+### `recist_response`
+
+RECIST 1.1 response category (CR / PR / SD / PD) from target-lesion sums with the percent
+        changes versus baseline and nadir.
+
+| parameter | type | default | description |
+|---|---|---|---|
+| `baseline_sld_mm` | number | *required* | Sum of longest diameters of target lesions at baseline (mm) |
+| `current_sld_mm` | number | *required* | Current sum of longest diameters (mm) |
+| `nadir_sld_mm` | number | `None` | Smallest SLD recorded so far (default: baseline) |
+| `new_lesions` | boolean | `False` |  |
+| `non_target_progression` | boolean | `False` | Unequivocal progression of non-target lesions |
+| `all_nodes_short_axis_below_10mm` | boolean | `True` | Required for CR when lymph nodes were targets |
+
+*Read-only.*
+
+### `fleischner_recommendation`
+
+Fleischner Society 2017 follow-up recommendation for an incidental pulmonary nodule.
+
+| parameter | type | default | description |
+|---|---|---|---|
+| `nodule_type` | `solid` \| `part-solid` \| `ground-glass` | *required* |  |
+| `size_mm` | number | *required* | Average of long and short axis diameters, nearest mm |
+| `multiple` | boolean | `False` | More than one nodule |
+| `high_risk` | boolean | `False` | Risk factors per the guideline (smoking, family history, upper-lobe location, spiculation ...) |
+
+*Read-only.*
+
+### `tirads_score`
+
+ACR TI-RADS (2017) points, level and size-based recommendation for a thyroid nodule.
+
+| parameter | type | default | description |
+|---|---|---|---|
+| `composition` | `cystic` \| `spongiform` \| `mixed` \| `solid` | *required* | Nodule composition |
+| `echogenicity` | `anechoic` \| `hyperechoic` \| `isoechoic` \| `hypoechoic` \| `very hypoechoic` | *required* | Echogenicity relative to thyroid parenchyma |
+| `shape` | `wider-than-tall` \| `taller-than-wide` | *required* |  |
+| `margin` | `smooth` \| `ill-defined` \| `lobulated` \| `irregular` \| `extra-thyroidal extension` | *required* |  |
+| `echogenic_foci` | array of `none` \| `comet-tail` \| `macrocalcifications` \| `peripheral` \| `rim` \| `punctate` | `None` | All that apply |
+| `max_diameter_mm` | number | `None` | Largest diameter for the FNA / follow-up decision |
+
+*Read-only.*
+
+### `agatston_score`
+
+Agatston coronary artery calcium score inside a mask (per label and total) with the usual
+        severity categories; requires non-contrast ECG-gated CT.
+
+| parameter | type | default | description |
+|---|---|---|---|
+| `image` | string | *required* | Non-contrast ECG-gated cardiac CT (HU) |
+| `mask` | string | *required* | Mask of the coronary arteries or the heart region (e.g. totalsegmentator coronary_arteries / heart) |
+| `threshold_hu` | number | `130.0` |  |
+| `min_area_mm2` | number | `1.0` |  |
+
+*Read-only.*
+
+### `cardiothoracic_ratio`
+
+Cardiothoracic ratio from a frontal chest radiograph anatomy mask (heart width / thoracic width).
+
+| parameter | type | default | description |
+|---|---|---|---|
+| `mask` | string | *required* | Chest X-ray anatomy mask (e.g. from run_model('torchxrayvision', task='segment')) |
+| `heart_labels` | array of integer | `None` | Label ids of the heart (default: labels named 'Heart') |
+| `thorax_labels` | array of integer | `None` | Label ids spanning the thorax (default: left + right lung) |
+
+*Read-only.*
+
+### `future_liver_remnant`
+
+Future liver remnant (FLR %) with the commonly used adequacy thresholds.
+
+| parameter | type | default | description |
+|---|---|---|---|
+| `total_liver_ml` | number | *required* |  |
+| `remnant_ml` | number | *required* | Volume of the liver that will remain after resection (mL) |
+| `tumor_ml` | number | `0.0` | Tumor volume inside the liver (mL), subtracted from the functional liver |
+| `liver_condition` | `healthy` \| `chemotherapy` \| `cirrhosis` | `healthy` |  |
+| `body_weight_kg` | number | `None` |  |
+
+*Read-only.*
+
+### `mayo_adpkd_class`
+
+Mayo Imaging Classification (1A-1E) of typical ADPKD from height-adjusted total kidney volume and age.
+
+| parameter | type | default | description |
+|---|---|---|---|
+| `total_kidney_volume_ml` | number | *required* |  |
+| `height_m` | number | *required* |  |
+| `age_years` | number | *required* |  |
+
+*Read-only.*
+
 ### `render_view`
 
 Render the image (with masks and prompts) so you can look at it. Tick labels are native
@@ -440,14 +583,22 @@ Plug-ins loaded into this server (workspace omm_plugins/, OMM_PLUGIN_DIRS, entry
 
 | prompt | description |
 |---|---|
+| `acr-ti-rads-2017` | Points-based risk stratification of thyroid nodules (composition, echogenicity, shape, margin, echogenic foci) with FNA and follow-up size thresholds; computed by the tirads_score tool. |
 | `batch-processing` | Run a model over many images with run_batch, sample cases for visual QC, handle failures, and deliver a CSV plus a short QC report. |
 | `brain-mri-preprocessing` | Standard brain MRI preparation - check orientation, N4 bias correction, skull stripping with HD-BET or SynthStrip, QC of the brain mask, and hand-off to downstream models. |
+| `chest-xray-anatomy-and-ctr` | Segment the lungs, heart and other structures on a frontal chest X-ray with TorchXRayVision's PSPNet and compute the cardiothoracic ratio, with the known caveats. |
 | `chest-xray-triage` | Classify a chest X-ray with TorchXRayVision, sanity-check the image, report calibrated probabilities honestly, and segment a finding with a box prompt when localisation is needed. |
 | `compare-two-segmentations` | Compare a prediction against a reference (or two methods against each other) with overlap and surface metrics and a visual difference map. |
+| `coronary-calcium-agatston` | Requirements and steps to compute an Agatston score from non-contrast ECG-gated cardiac CT with TotalSegmentator's coronary segmentation and the agatston_score tool, with severity categories. |
+| `fleischner-2017` | Management recommendations for incidental solid and subsolid pulmonary nodules on CT in adults (not screening), with the tool that returns the recommendation. |
 | `getting-started` | Orientation for agents - what the tools are, the coordinate conventions, and the standard loop (inspect -> segment -> look -> refine -> measure -> report). |
+| `li-rads-2018` | How to categorise liver observations (LR-1 to LR-5, LR-M, LR-TIV) in cirrhosis / chronic HBV using major features on multiphase CT or MRI. |
 | `lung-ct-analysis` | Quantitative lung CT - lungmask lungs/lobes, per-lobe volumes, LAA% emphysema index, optional vessel/airway masks with TotalSegmentator, and a montage QC. |
+| `lung-rads-2022` | Category definitions and management for low-dose CT lung cancer screening (ACR Lung-RADS v2022), for use when a screening context is stated. |
 | `multi-organ-ct-report` | Produce a volumetry table for several organs from one CT with TotalSegmentator, with per-organ QC figures and a Markdown/HTML report. |
+| `organ-volume-reference-ranges` | Approximate adult reference ranges for organ volumes measured on CT/MRI, with sources, for sanity-checking segmentation results and flagging outliers. |
 | `qc-checklist` | The minimum set of checks before a mask is accepted - visual, geometric, intensity and consistency checks with concrete tool calls. |
+| `recist-1-1` | How to select, measure and follow target lesions on CT/MRI and classify response (CR/PR/SD/PD) per RECIST 1.1, with the tools that compute the numbers. |
 | `registration-followup` | Align a follow-up scan to a baseline (rigid/affine/deformable), propagate the baseline mask, re-segment on the follow-up, and report volume change with a visual check. |
 | `segmentation-2d-prompted` | Protocol for 2D images (X-ray, ultrasound frame, dermoscopy, endoscopy, histology tile, single slice) with SAM 2 / MedSAM2 - place prompts, verify, refine with negative points. |
 | `segmentation-3d-ct` | End-to-end protocol for 3D CT segmentation - inspect, choose automatic (TotalSegmentator) vs promptable (MedSAM2) models, QC in three planes, measure volume, report. |

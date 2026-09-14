@@ -27,7 +27,12 @@ locally on the user's machine; images never leave it. Follow this loop for any t
    `postprocess_mask` (largest component, fill holes, remove small islands). Re-render after each change.
 7. **Measure** - `mask_stats(mask, image)` gives volumes (mL), bounding boxes and intensity stats;
    `compare_masks(a, b)` gives Dice/IoU/HD95 between two masks.
-8. **Report** - `write_report(...)` assembles the figures, numbers and provenance into Markdown + HTML.
+8. **Apply clinical criteria** - tools implement widely used published criteria: `measure_lesion` +
+   `recist_response` (RECIST 1.1), `fleischner_recommendation`, `tirads_score`, `agatston_score`,
+   `cardiothoracic_ratio`, `future_liver_remnant`, `mayo_adpkd_class`; the matching guidelines
+   (`recist-1-1`, `fleischner-2017`, `lung-rads-2022`, `li-rads-2018`, `acr-ti-rads-2017`, ...) explain
+   scope and reporting. Beyond segmentation: `classify_image`, `detect`, `ask_vlm`, `run_model("radiomics", ...)`.
+9. **Report** - `write_report(...)` assembles the figures, numbers and provenance into Markdown + HTML.
 
 ## Coordinate conventions (important)
 

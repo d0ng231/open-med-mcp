@@ -12,7 +12,7 @@ on:
     inputs:
       adapters:
         description: "Space-separated adapters to build (default: all)"
-        default: "classical sam2 totalsegmentator lungmask hdbet nnunet monai torchxrayvision voxtell"
+        default: "classical sam2 totalsegmentator lungmask hdbet nnunet monai torchxrayvision voxtell radiomics vlm"
 
 permissions:
   contents: read
@@ -24,7 +24,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        adapter: [classical, sam2, totalsegmentator, lungmask, hdbet, nnunet, monai, torchxrayvision, voxtell]
+        adapter: [classical, sam2, totalsegmentator, lungmask, hdbet, nnunet, monai, torchxrayvision, voxtell, radiomics, vlm]
     steps:
       - uses: actions/checkout@v4
       - name: Skip adapters not requested

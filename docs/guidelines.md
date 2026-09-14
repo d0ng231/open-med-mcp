@@ -40,6 +40,14 @@ numeric sanity ranges, explicit QC criteria, and what the report must contain.
 | `multi-organ-ct-report` | volumetry table for several organs with per-organ QC figures |
 | `compare-two-segmentations` | prediction vs reference: metrics + visual difference |
 | `qc-checklist` | the minimum checks before accepting a mask |
+| `chest-xray-anatomy-and-ctr` | anatomy segmentation + cardiothoracic ratio on a frontal radiograph |
+| `recist-1-1` | measurable lesions, SLD, CR/PR/SD/PD (Eisenhauer 2009) |
+| `fleischner-2017` | incidental pulmonary nodule follow-up (MacMahon 2017) |
+| `lung-rads-2022` | screening CT categories (ACR) |
+| `li-rads-2018` | HCC categories on multiphase CT/MRI (ACR) |
+| `acr-ti-rads-2017` | thyroid nodule points, levels and FNA thresholds |
+| `coronary-calcium-agatston` | calcium scoring requirements and categories |
+| `organ-volume-reference-ranges` | adult organ volume ranges with sources, for QC |
 
 ## Customizing
 

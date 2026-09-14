@@ -50,5 +50,8 @@ On a SLURM cluster (login node without GPU; L40S/H100 nodes without Docker or Ap
 * `medsam2`, `sam2` (2D + 3D, single and multi-object, axial and coronal propagation),
   `totalsegmentator` (fast and full resolution), `lungmask` (lungs, lobes), `hdbet`, `nnunet`
   (TotalSegmentator's 3 mm model as a generic nnU-Net folder), `monai` (spleen bundle),
-  `voxtell` (six text prompts; Dice 0.81-0.94 against TotalSegmentator) and `torchxrayvision`
-  through the local runner in GPU venvs; `torchxrayvision`, `lungmask` and `monai` also on CPU.
+  `voxtell` (six text prompts; Dice 0.81-0.94 against TotalSegmentator), `torchxrayvision`
+  (classification, anatomy segmentation, age), `vlm` (Qwen2.5-VL and MedGemma), `radiomics`
+  (pyradiomics, 200 features) and `monai` detection (RetinaNet lung nodules) through the local
+  runner in GPU/CPU venvs; the clinical criteria tools (RECIST, Fleischner, TI-RADS, Agatston,
+  CTR, FLR, Mayo ADPKD) are unit-tested and exercised through the MCP server.

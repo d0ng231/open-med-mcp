@@ -1,0 +1,47 @@
+name: vlm
+display_name: Medical vision-language model (MedGemma by default)
+description: >-
+  Ask a vision-language model about an image: describe findings, answer a question, draft a
+  report section, read a scanned document. Default is Google's MedGemma 4B (instruction tuned for
+  radiology, dermatology, ophthalmology and pathology; gated - accept the licence on Hugging Face
+  and log in with `hf auth login`). Any Hugging Face image-text-to-text model works via
+  `model_id` (e.g. Qwen/Qwen2.5-VL-3B-Instruct, open). 3D volumes are shown as one windowed slice.
+version: "0.1"
+category: vision-language
+tasks: [ask, download]
+default_task: ask
+modalities: [any]
+dims: [2, 3]
+prompt_types: [text]
+inputs:
+  image: {kind: image, required: false, description: "2D image (PNG/JPEG/DICOM) or a 3D volume (a slice is rendered)"}
+outputs:
+  answer: {kind: json, description: "answer.json: model id, prompt, answer text"}
+  shown: {kind: image, description: "The exact 2D image that was shown to the model", required: false}
+params:
+  prompt: {type: string, default: "Describe the key findings in this image.", description: "Question or instruction"}
+  system_prompt: {type: string, default: "You are an expert radiologist assistant. Describe what is visible, state uncertainty, and do not invent findings.", description: "System prompt (models that support it)"}
+  model_id: {type: string, default: google/medgemma-4b-it, description: "Hugging Face model id (image-text-to-text)"}
+  max_new_tokens: {type: integer, default: 400, minimum: 16, maximum: 4096}
+  temperature: {type: number, default: 0.0, minimum: 0, maximum: 2, description: "0 = greedy decoding"}
+  dtype: {type: string, default: bfloat16, choices: [bfloat16, float16, float32]}
+  slice: {type: integer, description: "3D: slice index along `plane` (default: middle or mask-guided by the caller)"}
+  plane: {type: string, default: axial, choices: [axial, coronal, sagittal]}
+  window: {type: string, description: "3D: intensity window (soft-tissue, lung, bone, brain, auto ...)"}
+weights: []
+container:
+  gpu: required
+  shm_size: 8g
+local:
+  entrypoint: run.py
+  requires: [torch, transformers]
+  extra: vlm
+runners: [local, docker, apptainer]
+license: Health AI Developer Foundations terms (MedGemma); each model_id carries its own licence
+homepage: https://huggingface.co/google/medgemma-4b-it
+citation: "Sellergren et al., MedGemma Technical Report, arXiv:2507.05201 (2025)"
+notes: >-
+  Outputs are model text, not validated diagnoses; always pair with the image (returned as
+  `shown`) so the agent can verify claims. Weights are cached under HF_HOME (defaults to
+  $OMM_HOME/weights/vlm/hf, ~8 GB for MedGemma 4B, ~7.5 GB for Qwen2.5-VL-3B).
+tags: [vision-language, report, question-answering, radiology, gpu]

@@ -4,14 +4,19 @@
 
 Initial public release.
 
-* MCP server (Python SDK v2) with 34 tools, 12 guideline prompts and `guideline://`, `model://`,
+* MCP server (Python SDK v2) with 44 tools, 20 guideline prompts and `guideline://`, `model://`,
   `omm://conventions` resources.
 * Model zoo with a uniform job-directory contract and three execution backends (local Python,
   Docker, Apptainer), including a *wrapped image* mode for official third-party containers:
   `medsam2`, `sam2` (SAM 2.1), `voxtell` (free-text prompts), `totalsegmentator`, `lungmask`, `hdbet` (HD-BET), `synthstrip`
   (FreeSurfer container), `nnunet` (any nnU-Net v2 model), `monai` (MONAI Model Zoo bundles),
-  `torchxrayvision` (chest X-ray classification), `classical` (thresholds / region growing),
-  and an adapter template.
+  `torchxrayvision` (chest X-ray classification, anatomy segmentation, age), `vlm` (MedGemma and
+  other vision-language models), `radiomics` (pyradiomics), `classical` (thresholds / region
+  growing), and an adapter template. MONAI bundles cover segmentation and detection.
+* Clinical criteria tools with citations: RECIST 1.1 (`measure_lesion`, `recist_response`),
+  Fleischner 2017, ACR TI-RADS 2017, Agatston calcium score, cardiothoracic ratio, future liver
+  remnant, Mayo ADPKD class; matching guideline presets plus Lung-RADS 2022, LI-RADS 2018 and
+  organ-volume reference ranges.
 * Tools: inspect / DICOM series listing / conversion, segment / run_model / classify_image /
   run_batch, mask statistics / post-processing / comparison / features / meshes / combination,
   resampling, re-orientation, cropping, N4 bias correction, registration (rigid, affine,

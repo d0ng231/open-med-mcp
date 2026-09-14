@@ -15,6 +15,10 @@ that lets AI coding agents (Claude Code, Codex CLI, Claude Desktop, Cursor, ...)
 medical image analysis** on your machine: inspect a CT/MRI/X-ray, pick a protocol, run a
 segmentation model, *look* at the result, refine it, measure it, and write a report.
 
+It is built on three pillars, and goes beyond segmentation: classification, detection,
+vision-language questions, radiomics, and computable clinical criteria (RECIST 1.1, Fleischner,
+Lung-RADS, LI-RADS, TI-RADS, Agatston) with the matching guidelines.
+
 It is built on three pillars:
 
 | pillar | what it means |
@@ -78,7 +82,8 @@ write_report("Liver volumetry", sections=[...])
 | group | tools |
 |---|---|
 | **inspect** | `inspect_image` (geometry, orientation, planes, statistics, modality guess, preview), `list_workspace`, `list_dicom_series`, `convert_image` |
-| **models** | `list_models`, `describe_model`, `download_weights`, `segment` (promptable or automatic), `run_model` (any model/task), `classify_image`, `run_batch` (cohorts -> CSV), `get_job` / `list_jobs` (background runs) |
+| **models** | `list_models`, `describe_model`, `download_weights`, `segment` (promptable or automatic), `run_model` (any model/task), `classify_image`, `detect`, `ask_vlm`, `run_batch` (cohorts -> CSV), `get_job` / `list_jobs` (background runs) |
+| **clinical criteria** | `measure_lesion` + `recist_response` (RECIST 1.1), `fleischner_recommendation` (2017), `tirads_score` (ACR TI-RADS), `agatston_score` (coronary calcium), `cardiothoracic_ratio`, `future_liver_remnant`, `mayo_adpkd_class` |
 | **masks** | `mask_stats` (volumes, bboxes, components, intensities), `postprocess_mask`, `compare_masks` (Dice, IoU, HD95, ASSD), `mask_to_prompts`, `combine_masks`, `mask_features` (shape + first-order radiomics), `mask_to_mesh` (STL/OBJ) |
 | **processing** | `resample_image`, `reorient_image`, `crop_image`, `n4_bias_correction`, `register_images` (rigid / affine / B-spline), `apply_transform` |
 | **viewer** | `render_view` (PNG the agent sees), `export_viewer` (HTML for humans), `write_report`, `list_renderers` |
@@ -98,8 +103,10 @@ Full reference with every parameter: [docs/tools.md](docs/tools.md). Coordinate 
 | `hdbet` | HD-BET 2.0 brain extraction (mask + stripped image) | MR | - | local `[hdbet]`, Docker, Apptainer |
 | `synthstrip` | FreeSurfer SynthStrip skull stripping, **official image wrapped** | MR, CT, PET | - | Docker, Apptainer (host `mri_synthstrip` if installed) |
 | `nnunet` | any nnU-Net v2 model (results folder, exported zip, dataset name) | any | - | local `[nnunet]`, Docker, Apptainer |
-| `monai` | MONAI Model Zoo segmentation bundles (spleen, pancreas, whole body, BraTS, prostate ...) | CT, MR | - | local `[monai]`, Docker, Apptainer |
-| `torchxrayvision` | chest X-ray classification, 18 findings, calibrated probabilities | XR | - | local `[torchxrayvision]`, Docker, Apptainer |
+| `monai` | MONAI Model Zoo bundles: segmentation (spleen, pancreas, whole body, BraTS, prostate ...) and detection (lung nodules, RetinaNet) | CT, MR | - | local `[monai]`, Docker, Apptainer |
+| `torchxrayvision` | chest X-ray: 18-finding classification, 14-structure anatomy segmentation (-> cardiothoracic ratio), biological age | XR | - | local `[torchxrayvision]`, Docker, Apptainer |
+| `vlm` | vision-language: MedGemma 4B by default (any HF image-text-to-text model, e.g. Qwen2.5-VL) - describe, answer, draft | any | text | local `[vlm]`, Docker, Apptainer |
+| `radiomics` | pyradiomics: IBSI feature extraction (shape, first order, GLCM, GLRLM, GLSZM, GLDM, NGTDM, filters) per label | CT, MR, PET | - | local (Python 3.9 venv), Docker, Apptainer |
 | `classical` | threshold / Otsu / multi-range / seeded region growing | any | seeds | local (no extras), Docker, Apptainer |
 
 ```bash
@@ -120,9 +127,13 @@ package (`OMM_MODEL_DIRS`). See [docs/models.md](docs/models.md).
 
 ## Guidelines
 
-Presets: `getting-started`, `segmentation-3d-ct`, `segmentation-3d-mri`, `segmentation-2d-prompted`,
-`brain-mri-preprocessing`, `chest-xray-triage`, `lung-ct-analysis`, `registration-followup`,
-`batch-processing`, `multi-organ-ct-report`, `compare-two-segmentations`, `qc-checklist`.
+Workflow presets: `getting-started`, `segmentation-3d-ct`, `segmentation-3d-mri`, `segmentation-2d-prompted`,
+`brain-mri-preprocessing`, `chest-xray-triage`, `chest-xray-anatomy-and-ctr`, `lung-ct-analysis`,
+`registration-followup`, `batch-processing`, `multi-organ-ct-report`, `compare-two-segmentations`, `qc-checklist`.
+
+Clinical criteria presets (each cites its source and states its scope): `recist-1-1`, `fleischner-2017`,
+`lung-rads-2022`, `li-rads-2018`, `acr-ti-rads-2017`, `coronary-calcium-agatston`,
+`organ-volume-reference-ranges`.
 
 Add your own: put `*.md` files with YAML front matter into `omm_guidelines/` in the workspace (or any
 directory in `OMM_GUIDELINE_DIRS`). A file with the same `name` overrides the preset. Guidelines
@@ -150,6 +161,8 @@ are also exposed as MCP prompts (`/mcp__open-med-mcp__segmentation-3d-ct` in Cla
 | ![brain masks](docs/assets/screenshots/brain_extraction.png) | ![CXR classification](docs/assets/screenshots/cxr_classification.png) |
 | **2D promptable: `segment("slice.png", model="medsam2", prompts=[box])`** | **agent QC view: `compare_masks(...)`** |
 | ![2D MedSAM2](docs/assets/screenshots/segment_2d.png) | ![compare masks](docs/assets/screenshots/compare_masks.png) |
+| **chest X-ray anatomy + `cardiothoracic_ratio(...)`** | **classify + measure + criteria** |
+| ![CXR anatomy](docs/assets/screenshots/cxr_anatomy_ctr.png) | RECIST `measure_lesion`/`recist_response`, Fleischner, TI-RADS, Agatston, `ask_vlm` (MedGemma), `run_model("radiomics", ...)` |
 
 All figures on this page are real outputs of the tools on public sample data (a small abdominal CT,
 the MNI152 template, a NIH chest X-ray); see `examples/get_sample_data.sh`. On that CT, VoxTell's

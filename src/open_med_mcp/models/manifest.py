@@ -104,9 +104,9 @@ class ModelManifest(BaseModel):
     contract_version: int = CONTRACT_VERSION
     adapter: str = Field(default="", description="Adapter directory name (defaults to the manifest's folder)")
     adapter_dir: Path | None = Field(default=None, exclude=True)
-    category: Literal["segmentation", "classification", "preprocessing", "detection", "other"] = (
-        "segmentation"
-    )
+    category: Literal[
+        "segmentation", "classification", "preprocessing", "detection", "vision-language", "features", "other"
+    ] = "segmentation"
     tasks: list[str] = Field(default_factory=lambda: ["segment"])
     default_task: str = ""
     task_descriptions: dict[str, str] = Field(default_factory=dict)

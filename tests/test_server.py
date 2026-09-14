@@ -182,4 +182,4 @@ async def test_list_and_describe_models(client: Client):
     r = await client.call_tool("describe_model", {"name": "sam2"})
     assert "params_schema" in r.structured_content and "backends" in r.structured_content
     r = await client.call_tool("list_guidelines", {"tags": ["qc"]})
-    assert [g["name"] for g in r.structured_content["guidelines"]] == ["qc-checklist"]
+    assert "qc-checklist" in [g["name"] for g in r.structured_content["guidelines"]]

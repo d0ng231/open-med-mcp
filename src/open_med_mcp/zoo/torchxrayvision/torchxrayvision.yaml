@@ -1,21 +1,27 @@
 name: torchxrayvision
 display_name: TorchXRayVision (chest X-ray pathology classification)
 description: >-
-  Pre-trained chest radiograph classifiers (DenseNet-121 / ResNet-50) from TorchXRayVision that
-  output calibrated probabilities for 18 findings (atelectasis, cardiomegaly, consolidation,
+  Chest radiograph models from TorchXRayVision: classifiers (DenseNet-121 / ResNet-50) with
+  calibrated probabilities for 18 findings, a 14-structure anatomy segmentation (PSPNet, enables
+  the cardiothoracic ratio) and a biological-age estimator. Findings covered (atelectasis, cardiomegaly, consolidation,
   edema, effusion, emphysema, fibrosis, fracture, hernia, infiltration, lung lesion, lung opacity,
   mass, nodule, pleural thickening, pneumonia, pneumothorax, enlarged cardiomediastinum). CPU is fine.
 version: "0.1"
 category: classification
-tasks: [classify]
+tasks: [classify, segment, age]
 default_task: classify
+task_descriptions:
+  classify: "Probabilities for 18 findings (DenseNet-121 / ResNet-50)"
+  segment: "Anatomy segmentation of 14 structures (lungs, heart, clavicles, scapulae, mediastinum, spine, airways ...) with the chestx-det PSPNet"
+  age: "Biological age estimate from the radiograph (RIKEN model)"
 modalities: [XR]
 dims: [2]
 prompt_types: []
 inputs:
   image: {kind: image, required: true, description: "Frontal chest radiograph (PNG/JPEG/DICOM)"}
 outputs:
-  predictions: {kind: json, description: "Probabilities per finding"}
+  predictions: {kind: json, description: "classify: probabilities per finding; age: estimate"}
+  mask: {kind: mask, description: "segment: 14-label anatomy map (PNG label map)", required: false}
 params:
   weights: {type: string, default: densenet121-res224-all, choices: [densenet121-res224-all, densenet121-res224-nih, densenet121-res224-chex, densenet121-res224-mimic_ch, densenet121-res224-mimic_nb, densenet121-res224-pc, densenet121-res224-rsna, resnet50-res512-all], description: "Pre-trained weights (`all` = trained on 8 datasets)"}
   top_k: {type: integer, default: 5, minimum: 1, maximum: 18}
@@ -31,4 +37,4 @@ license: Apache-2.0
 homepage: https://github.com/mlmed/torchxrayvision
 citation: "Cohen et al., TorchXRayVision: A library of chest X-ray datasets and models, MIDL (2022)"
 notes: "Probabilities are model outputs for research use; they are not diagnoses. Weights (~30 MB) download on first use into $OMM_HOME/weights/torchxrayvision."
-tags: [classification, x-ray, chest, cpu]
+tags: [classification, segmentation, anatomy, age, x-ray, chest, cpu]

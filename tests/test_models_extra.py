@@ -183,7 +183,7 @@ async def test_classify_and_batch_tools(fake_models, ct_volume, blob_png, isolat
         assert r.structured_content["results"]["predictions"]["probabilities"]["finding_a"] == 0.9
         assert any(isinstance(x, ImageContent) for x in r.content)
         r = await c.call_tool("segment", {"image": "blob.png", "model": "fakeclf"})
-        assert r.is_error and "classification model" in r.content[0].text
+        assert r.is_error and "does not produce a mask" in r.content[0].text
         r = await c.call_tool("run_model", {"model": "copytool", "inputs": {"image": "ball_mask.nii.gz"}})
         assert (
             not r.is_error
