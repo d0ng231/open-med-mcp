@@ -19,7 +19,7 @@ server and the models.
 ## Data flow of a `segment` call
 
 1. The tool resolves the image path against the workspace and loads it (cached).
-2. Prompts (native `x, y, z`) are normalised to the adapter wire format: slice index along the
+2. Prompts (native `x, y, z`) are normalized to the adapter wire format: slice index along the
    chosen plane's NumPy axis and in-plane `(col, row)` coordinates.
 3. `prepare_job` creates `omm_outputs/<run>/`, stages the input in a canonical format
    (`.nii.gz` for volumes, `.png` for 2D integer images) and writes `request.json`.

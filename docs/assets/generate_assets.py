@@ -214,7 +214,7 @@ def save_architecture() -> None:
     ax.text(
         0.35,
         4.25,
-        "1. containerized specialised models\n2. preset / custom guidelines\n3. code-customisable viewer",
+        "1. containerized specialised models\n2. preset / custom guidelines\n3. code-customizable viewer",
         fontsize=8.6,
         color="#475569",
         va="top",

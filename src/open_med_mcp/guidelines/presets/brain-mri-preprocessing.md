@@ -10,7 +10,7 @@ version: 1
 ---
 ## 1. Inspect
 `inspect_image(t1)` - note orientation (e.g. RAS/LPS), spacing (anisotropic clinical scans are
-common) and whether intensities look bias-affected (bright centre, dark periphery in `render_view`).
+common) and whether intensities look bias-affected (bright center, dark periphery in `render_view`).
 
 ## 2. Reorient (optional)
 Most tools handle any orientation, but a canonical frame simplifies reporting:

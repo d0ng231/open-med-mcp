@@ -43,7 +43,7 @@ Rules that keep plug-ins stable in every client:
 * Type every parameter (pydantic generates the JSON schema the client validates against) and
   describe it with `Field(description=...)`; write a docstring - it is what the agent reads.
 * Resolve paths with `resolve()` (workspace-relative, honours `OMM_ALLOW_OUTSIDE_WORKSPACE`).
-* Return `result(payload, images)` for JSON + previews, or plain JSON-serialisable values.
+* Return `result(payload, images)` for JSON + previews, or plain JSON-serializable values.
 * Never print to stdout (stdio transport); use `logging.getLogger("open_med_mcp.plugins.<name>")`.
 * Long work: run it in your own thread and expose a status tool, or accept a `wait` flag like
   `run_model` does; keep single calls well under the client's tool timeout.

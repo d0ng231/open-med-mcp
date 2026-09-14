@@ -240,7 +240,7 @@ def mask_to_prompts(
     lo[np_to_xyz(col_np)], hi[np_to_xyz(col_np)] = max(c0 - margin, 0), min(c1 + margin, shape[col_np] - 1)
     lo[np_to_xyz(axis)] = hi[np_to_xyz(axis)] = s
     box3d = [lo[0], lo[1], lo[2], hi[0], hi[1], hi[2]]
-    # centre points
+    # center points
     points: list[list[float]] = []
     labeled, n = ndimage.label(sl)
     comps = sorted(range(1, n + 1), key=lambda i: -int((labeled == i).sum()))[: max(n_points, 1)]

@@ -13,7 +13,7 @@ render_view(image, masks=[...], plane="axial", layout="single|three-plane|montag
 ```
 
 * `single` picks the slice with the largest mask area (or the middle slice) unless `slices` is given.
-* `three-plane` crosses at `center_xyz`, the mask centroid or the volume centre.
+* `three-plane` crosses at `center_xyz`, the mask centroid or the volume center.
 * `montage` spreads `n_slices` over the mask extent (or the whole stack).
 * Tick labels are native voxel indices; `panels[]` in the result reports the screen-axis mapping.
 * Prompts are drawn on their slice only (green `+` positive point, red `x` negative, cyan dashed box).
@@ -33,7 +33,7 @@ render_view(image, masks=[...], plane="axial", layout="single|three-plane|montag
 * `open-med-mcp serve-viewer image.nii.gz -m mask.nii.gz` serves a NiiVue page (WebGL, from CDN)
   with the volumes over a localhost HTTP server for real 3D inspection.
 
-## Customising renderers
+## Customizing renderers
 
 A renderer is any object with `render(image: MedicalImage, masks, spec: ViewSpec) -> RenderResult`,
 where `masks` is a list of `(MedicalImage, {"layer": MaskLayer, "labels": {id: name}})`.

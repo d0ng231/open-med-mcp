@@ -41,7 +41,7 @@ numeric sanity ranges, explicit QC criteria, and what the report must contain.
 | `compare-two-segmentations` | prediction vs reference: metrics + visual difference |
 | `qc-checklist` | the minimum checks before accepting a mask |
 
-## Customising
+## Customizing
 
 * Workspace-level: put `*.md` files in `<workspace>/omm_guidelines/`.
 * Machine-level: `OMM_GUIDELINE_DIRS=/path/a:/path/b`.

@@ -132,7 +132,7 @@ def finalize(
                 if not labels:
                     labels = {str(lab): f"label_{lab}" for lab in present}
             except Exception as exc:  # pragma: no cover - keep the run usable
-                stats = {"warning": f"could not summarise mask: {exc}"}
+                stats = {"warning": f"could not summarize mask: {exc}"}
     else:
         status = "error"
         log_tail = (

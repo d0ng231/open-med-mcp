@@ -88,7 +88,7 @@ def register(server: MCPServer) -> None:
         alpha: Annotated[float, Field(ge=0, le=1)] = 0.35,
         labels: Annotated[list[int] | None, Field(description="Only draw these label ids")] = None,
         colors: Annotated[
-            list[str] | None, Field(description="Hex colour per mask file (default: palette per label)")
+            list[str] | None, Field(description="Hex color per mask file (default: palette per label)")
         ] = None,
         prompts: Annotated[
             list[Prompt] | None,

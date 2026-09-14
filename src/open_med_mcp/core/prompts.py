@@ -1,4 +1,4 @@
-"""Prompt schemas for promptable segmentation models (points, boxes) and coordinate normalisation."""
+"""Prompt schemas for promptable segmentation models (points, boxes) and coordinate normalization."""
 
 from __future__ import annotations
 

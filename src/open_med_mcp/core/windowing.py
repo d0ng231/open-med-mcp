@@ -1,4 +1,4 @@
-"""Intensity windowing (window centre / width) and conversion to 8-bit for display and models."""
+"""Intensity windowing (window center / width) and conversion to 8-bit for display and models."""
 
 from __future__ import annotations
 

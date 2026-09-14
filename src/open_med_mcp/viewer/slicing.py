@@ -162,7 +162,7 @@ def auto_slices(
     img: MedicalImage, plane: Plane, masks: list[np.ndarray], n: int = 1, margin: int = 1
 ) -> list[int]:
     """Choose slice indices: the ones with the largest mask area (``n==1``) or evenly spaced across
-    the mask extent; without masks, the centre (``n==1``) or evenly spaced through the volume."""
+    the mask extent; without masks, the center (``n==1``) or evenly spaced through the volume."""
     if img.is_2d:
         return [0]
     np_axis = img.numpy_axis_for_plane(plane)

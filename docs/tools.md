@@ -360,7 +360,7 @@ Render the image (with masks and prompts) so you can look at it. Tick labels are
 | `mode` | `fill` \| `contour` \| `both` | `both` | How to draw masks |
 | `alpha` | number | `0.35` |  |
 | `labels` | array of integer | `None` | Only draw these label ids |
-| `colors` | array of string | `None` | Hex colour per mask file (default: palette per label) |
+| `colors` | array of string | `None` | Hex color per mask file (default: palette per label) |
 | `prompts` | array of Prompt | `None` | Draw these prompts (to verify placement before segmenting) |
 | `grid` | boolean | `True` | Tick labels in native voxel coordinates |
 | `crop_to_mask` | boolean | `False` | Zoom to the mask bounding box |

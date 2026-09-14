@@ -31,7 +31,7 @@ class MaskLayer(BaseModel):
     name: str | None = Field(default=None, description="Legend name (defaults to file name)")
     color: str | None = Field(
         default=None,
-        description="Single colour for all labels of this layer (hex); default = per-label palette",
+        description="Single color for all labels of this layer (hex); default = per-label palette",
     )
     alpha: float = Field(default=0.35, ge=0.0, le=1.0)
     mode: MaskMode = "both"
@@ -53,7 +53,7 @@ class ViewSpec(BaseModel):
     n_slices: int = Field(default=9, ge=1, le=64, description="montage: number of slices")
     center_xyz: list[float] | None = Field(
         default=None,
-        description="three-plane: crossing point in native voxel coords; None = mask centroid or volume centre",
+        description="three-plane: crossing point in native voxel coords; None = mask centroid or volume center",
     )
     window: Any = Field(
         default=None,

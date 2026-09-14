@@ -369,7 +369,7 @@ def _to_uint8(arr: np.ndarray) -> np.ndarray:
 def load_mask(path: str | Path, like: MedicalImage | None = None) -> MedicalImage:
     """Load a label map and (optionally) check that its geometry matches ``like``."""
     mask = MedicalImage.load(path)
-    if mask.is_rgb:  # colour PNG masks -> label ids by unique colour is ambiguous; use luma > 0
+    if mask.is_rgb:  # color PNG masks -> label ids by unique color is ambiguous; use luma > 0
         mask = MedicalImage(
             (mask.scalar_array > 0).astype(np.uint8),
             mask.spacing,

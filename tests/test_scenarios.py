@@ -71,7 +71,7 @@ async def test_stdio_subprocess_end_to_end(isolated_settings, ct_volume):
         )
         assert not r.is_error, r.content[0].text
         mask = r.structured_content["outputs"]["mask"]
-        # concurrent calls (tools run in worker threads; rendering is serialised by a lock)
+        # concurrent calls (tools run in worker threads; rendering is serialized by a lock)
         calls = [
             c.call_tool("render_view", {"image": "ct.nii.gz", "masks": [mask], "layout": lay})
             for lay in ("single", "three-plane", "montage", "single", "three-plane")
