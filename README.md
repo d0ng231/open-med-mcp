@@ -7,19 +7,24 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0-blue.svg" alt="License"></a>
   <img src="https://img.shields.io/badge/python-3.10%2B-blue.svg" alt="Python 3.10+">
   <img src="https://img.shields.io/badge/MCP-Python%20SDK%20v2-8A2BE2.svg" alt="MCP">
-  <img src="https://img.shields.io/badge/models-SAM%202.1%20%C2%B7%20MedSAM2%20%C2%B7%20TotalSegmentator-0ea5a4.svg" alt="Models">
+  <img src="https://img.shields.io/badge/tools-44-0ea5a4.svg" alt="44 tools">
+  <img src="https://img.shields.io/badge/models-MedSAM2%20%C2%B7%20VoxTell%20%C2%B7%20TotalSegmentator%20%C2%B7%20MedGemma-0ea5a4.svg" alt="Models">
 </p>
+
+<p align="center">
+  <img src="docs/assets/demo.gif" alt="open-med-mcp agent session: inspect a chest CT, segment bone, measure it (RECIST), and classify a chest X-ray" width="900">
+</p>
+
+<p align="center"><em>A real captured Claude Code session driving open-med-mcp: inspect a chest CT, threshold-segment the bone, measure it (RECIST 1.1), and read a chest X-ray. Every number and image above is genuine tool output.</em></p>
 
 **open-med-mcp** is an open, modular [Model Context Protocol](https://modelcontextprotocol.io) server
 that lets AI coding agents (Claude Code, Codex CLI, Claude Desktop, Cursor, ...) do **end-to-end
 medical image analysis** on your machine: inspect a CT/MRI/X-ray, pick a protocol, run a
 segmentation model, *look* at the result, refine it, measure it, and write a report.
 
-It is built on three pillars, and goes beyond segmentation: classification, detection,
-vision-language questions, radiomics, and computable clinical criteria (RECIST 1.1, Fleischner,
-Lung-RADS, LI-RADS, TI-RADS, Agatston) with the matching guidelines.
-
-It is built on three pillars:
+It goes beyond segmentation - classification, detection, vision-language questions, radiomics, and
+computable clinical criteria (RECIST 1.1, Fleischner, Lung-RADS, LI-RADS, TI-RADS, Agatston) with
+the matching guidelines - and is built on three pillars:
 
 | pillar | what it means |
 |---|---|
