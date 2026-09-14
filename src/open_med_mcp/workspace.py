@@ -7,6 +7,7 @@ import os
 import re
 import secrets
 import shutil
+import threading
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -15,6 +16,7 @@ from typing import Any
 from open_med_mcp.config import Settings, get_settings
 
 _SAFE = re.compile(r"[^A-Za-z0-9._-]+")
+_PROVENANCE_LOCK = threading.Lock()
 
 
 class WorkspaceError(ValueError):
@@ -97,7 +99,7 @@ def record_provenance(tool: str, inputs: dict[str, Any], outputs: dict[str, Any]
     }
     path = provenance_path(settings)
     path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("a", encoding="utf-8") as fh:
+    with _PROVENANCE_LOCK, path.open("a", encoding="utf-8") as fh:
         fh.write(json.dumps(entry, ensure_ascii=False) + "\n")
 
 

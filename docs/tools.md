@@ -27,7 +27,7 @@ Describe an image: geometry (size, spacing, orientation, planes), intensity stat
 |---|---|---|---|
 | `path` | string | *required* | Image file (NIfTI, NRRD, MetaImage, PNG/JPEG/TIFF, DICOM file) or a DICOM series folder |
 | `preview` | boolean | `True` | Return a preview PNG of the middle slice |
-| `window` | any | `None` | Preview window: preset name, {center,width}, [lower, upper] or 'auto' |
+| `window` | string \| object \| array of number | `None` | Preview window: preset name, {center,width}, [lower, upper] or 'auto' |
 
 *Read-only.*
 
@@ -79,31 +79,35 @@ Download a model's weights into the local weights directory (needed once per mac
 
 Run any model of the zoo through the job contract (local / Docker / Apptainer backend chosen
         automatically). Returns output paths, label names, statistics, inlined JSON results and a preview.
+        Long runs send progress notifications; use wait=false for background execution.
 
 | parameter | type | default | description |
 |---|---|---|---|
-| `model` | string | *required* | Model name, e.g. totalsegmentator, lungmask, hdbet, synthstrip, nnunet, monai, classical |
+| `model` | string | *required* | Model name, e.g. totalsegmentator, lungmask, hdbet, synthstrip, nnunet, monai, voxtell, classical |
 | `inputs` | object | *required* | Input files by role, usually {'image': 'path'} (some tasks need none) |
 | `task` | string | `None` | Task name (see describe_model); default = the model's default task |
 | `params` | object | `None` | Model parameters (see describe_model params_schema) |
 | `output` | string | `None` | Copy the main mask output to this path |
 | `preview` | boolean | `True` | Return a three-plane preview PNG when the result is a mask |
+| `wait` | boolean | `True` | false = return a job_id immediately and poll get_job (for very long runs or clients with short tool timeouts) |
 
 ### `segment`
 
-Segment a structure. For promptable models give at least one box or point; the result is a
-        label map (label = object_id), statistics and a preview. Look at the preview, then refine.
+Segment a structure. For promptable models give at least one box/point (MedSAM2, SAM 2) or
+        text prompt (VoxTell); the result is a label map (label = object_id / prompt index),
+        statistics and a preview. Look at the preview, then refine.
 
 | parameter | type | default | description |
 |---|---|---|---|
 | `image` | string | *required* | Image path (2D or 3D) |
-| `model` | string | `medsam2` | Promptable model (medsam2, sam2) or automatic model (totalsegmentator, lungmask, classical ...) |
-| `prompts` | array of Prompt | `None` | Point/box prompts in native voxel coordinates (required for promptable models) |
+| `model` | string | `medsam2` | Promptable model (medsam2, sam2 with points/boxes; voxtell with text) or automatic model (totalsegmentator, lungmask, classical ...) |
+| `prompts` | array of Prompt | `None` | Point/box prompts in native voxel coordinates, or text prompts ({'type': 'text', 'text': 'liver'}) for VoxTell (required for promptable models) |
 | `plane` | `axial` \| `coronal` \| `sagittal` | `axial` | 3D: plane along which 2D prompts are placed and the mask is propagated |
 | `params` | object | `None` | Extra model parameters, e.g. {'variant': 'medsam2_ct_lesion', 'window': 'lung', 'max_slices': 20} |
 | `task` | string | `None` | Task for automatic models (e.g. 'threshold' for classical, 'lobes' for lungmask) |
 | `output` | string | `None` | Copy the mask to this path |
 | `preview` | boolean | `True` |  |
+| `wait` | boolean | `True` | false = background job; poll get_job(job_id) |
 
 ### `classify_image`
 
@@ -131,6 +135,24 @@ Run one model over many images (cohort processing). Returns a per-case table wit
 | `output_dir` | string | `None` | Copy each mask here as <image name>_<model>.nii.gz |
 | `max_cases` | integer | `500` |  |
 | `continue_on_error` | boolean | `True` |  |
+| `wait` | boolean | `True` | false = background job; poll get_job(job_id) |
+
+### `get_job`
+
+Status of a background job; when it is done, the complete result of the original call
+        (paths, statistics, preview) is returned here.
+
+| parameter | type | default | description |
+|---|---|---|---|
+| `job_id` | string | *required* | Job id returned by run_model/segment/run_batch with wait=false |
+
+*Read-only.*
+
+### `list_jobs`
+
+Background jobs of this server session (running, done, failed).
+
+*Read-only.*
 
 ### `mask_stats`
 
@@ -334,7 +356,7 @@ Render the image (with masks and prompts) so you can look at it. Tick labels are
 | `layout` | `single` \| `three-plane` \| `montage` | `single` | single slice, three orthogonal planes, or a montage of several slices |
 | `slices` | array of integer | `None` | Slice indices (native, along `plane`); default: largest mask area or the middle |
 | `n_slices` | integer | `9` | montage: number of slices spread over the mask extent |
-| `window` | any | `None` | Preset (soft-tissue, lung, bone, brain, liver ...), {center,width}, [lower, upper] or 'auto' |
+| `window` | string \| object \| array of number | `None` | Preset (soft-tissue, lung, bone, brain, liver ...), {center,width}, [lower, upper] or 'auto' |
 | `mode` | `fill` \| `contour` \| `both` | `both` | How to draw masks |
 | `alpha` | number | `0.35` |  |
 | `labels` | array of integer | `None` | Only draw these label ids |
@@ -361,7 +383,7 @@ Write a self-contained interactive HTML slice viewer (scroll, overlay toggle, cl
 | `masks` | array of string | `None` |  |
 | `output` | string | `None` | HTML file to write (default omm_outputs/views/<image>_viewer.html) |
 | `plane` | `axial` \| `coronal` \| `sagittal` | `axial` |  |
-| `window` | any | `None` |  |
+| `window` | string \| object \| array of number | `None` |  |
 | `alpha` | number | `0.4` |  |
 | `title` | string | `None` |  |
 
@@ -409,6 +431,10 @@ Return the full Markdown text of a guideline. Follow it step by step and report 
 Coordinate, prompt, mask and unit conventions used by every tool (read once per session).
 
 *Read-only.*
+
+### `list_plugins`
+
+Plug-ins loaded into this server (workspace omm_plugins/, OMM_PLUGIN_DIRS, entry points).
 
 ## Prompts (guidelines)
 

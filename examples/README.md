@@ -7,3 +7,4 @@
 | `agent_session.md` | an annotated end-to-end session (tool calls and what the agent saw) |
 | `custom_guideline.md` | a workspace guideline that overrides a preset |
 | `mcp_configs/` | client configuration snippets |
+| `plugins/lesion_count.py` | a drop-in tool plug-in (copy to `<workspace>/omm_plugins/`) |

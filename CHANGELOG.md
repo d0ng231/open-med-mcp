@@ -4,7 +4,7 @@
 
 Initial public release.
 
-* MCP server (Python SDK v2) with 31 tools, 12 guideline prompts and `guideline://`, `model://`,
+* MCP server (Python SDK v2) with 34 tools, 12 guideline prompts and `guideline://`, `model://`,
   `omm://conventions` resources.
 * Model zoo with a uniform job-directory contract and three execution backends (local Python,
   Docker, Apptainer), including a *wrapped image* mode for official third-party containers:
@@ -23,5 +23,10 @@ Initial public release.
 * Viewer: PNG renderer (single / three-plane / montage, prompts, native-coordinate grid),
   self-contained HTML slice viewer with prompt-coordinate picking, Markdown/HTML reports, NiiVue
   3D page, renderer plugin registry.
+* Plug-ins: drop-in tool modules (`omm_plugins/`, `OMM_PLUGIN_DIRS`, entry points) with a stable
+  `open_med_mcp.plugin_api`; scaffolding (`new plugin|model|guideline`); `install` for Claude Code / Codex.
+* Robustness: progress notifications and background jobs (`wait=false`, `get_job`), thread-safe
+  caches/rendering, capped inline images, text-only mode, stderr/file logging, HTTP path policy,
+  scenario tests over real stdio and streamable-HTTP transports.
 * CLI: serve, doctor, models (list/info/check/download/build/pull/def), run, view, serve-viewer,
-  guidelines, client-config. CI (lint, tests, wheel) and GHCR container builds.
+  guidelines, plugins, new, install, client-config. CI (lint, tests, wheel) and GHCR container builds.

@@ -19,7 +19,7 @@ from open_med_mcp.core.image import (
     detect_format,
     file_suffix,
 )
-from open_med_mcp.tools._common import load_image_cached, resolve, resolve_output, result, tool_errors
+from open_med_mcp.tools._common import Window, load_image_cached, resolve, resolve_output, result, tool_errors
 from open_med_mcp.viewer.registry import get_renderer
 from open_med_mcp.viewer.spec import ViewSpec
 from open_med_mcp.workspace import display_path, record_provenance
@@ -64,25 +64,26 @@ def register(server: MCPServer) -> None:
         root = resolve(subdir or ".")
         it = root.rglob("*") if recursive else root.iterdir()
         items = []
-        for p in sorted(it):
-            if p.name.startswith("."):
+        truncated = False
+        for p in it:
+            if any(part.startswith(".") for part in p.relative_to(root).parts):
                 continue
             if not fnmatch.fnmatch(p.name, pattern):
                 continue
-            kind = _classify(p)
-            items.append(
-                {
-                    "path": display_path(p),
-                    "type": kind,
-                    "size_mb": round(p.stat().st_size / 1e6, 3) if p.is_file() else None,
-                }
-            )
+            try:
+                size = round(p.stat().st_size / 1e6, 3) if p.is_file() else None
+            except OSError:
+                size = None
+            items.append({"path": display_path(p), "type": _classify(p), "size_mb": size})
             if len(items) >= max_items:
+                truncated = True
                 break
+        items.sort(key=lambda e: e["path"])
         return {
             "workspace": str(settings.workspace),
             "outputs_dir": display_path(settings.outputs_dir),
             "count": len(items),
+            "truncated": truncated,
             "items": items,
         }
 
@@ -97,7 +98,7 @@ def register(server: MCPServer) -> None:
         ],
         preview: Annotated[bool, Field(description="Return a preview PNG of the middle slice")] = True,
         window: Annotated[
-            Any, Field(description="Preview window: preset name, {center,width}, [lower, upper] or 'auto'")
+            Window, Field(description="Preview window: preset name, {center,width}, [lower, upper] or 'auto'")
         ] = None,
     ) -> CallToolResult:
         """Describe an image: geometry (size, spacing, orientation, planes), intensity statistics,

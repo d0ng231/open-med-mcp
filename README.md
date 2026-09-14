@@ -78,11 +78,11 @@ write_report("Liver volumetry", sections=[...])
 | group | tools |
 |---|---|
 | **inspect** | `inspect_image` (geometry, orientation, planes, statistics, modality guess, preview), `list_workspace`, `list_dicom_series`, `convert_image` |
-| **models** | `list_models`, `describe_model`, `download_weights`, `segment` (promptable or automatic), `run_model` (any model/task), `classify_image`, `run_batch` (cohorts -> CSV) |
+| **models** | `list_models`, `describe_model`, `download_weights`, `segment` (promptable or automatic), `run_model` (any model/task), `classify_image`, `run_batch` (cohorts -> CSV), `get_job` / `list_jobs` (background runs) |
 | **masks** | `mask_stats` (volumes, bboxes, components, intensities), `postprocess_mask`, `compare_masks` (Dice, IoU, HD95, ASSD), `mask_to_prompts`, `combine_masks`, `mask_features` (shape + first-order radiomics), `mask_to_mesh` (STL/OBJ) |
 | **processing** | `resample_image`, `reorient_image`, `crop_image`, `n4_bias_correction`, `register_images` (rigid / affine / B-spline), `apply_transform` |
 | **viewer** | `render_view` (PNG the agent sees), `export_viewer` (HTML for humans), `write_report`, `list_renderers` |
-| **guidance** | `list_guidelines`, `get_guideline`, `get_conventions` (+ MCP prompts and resources) |
+| **guidance** | `list_guidelines`, `get_guideline`, `get_conventions` (+ MCP prompts and resources), `list_plugins` |
 
 Full reference with every parameter: [docs/tools.md](docs/tools.md). Coordinate conventions: [docs/coordinates.md](docs/coordinates.md).
 
@@ -156,6 +156,35 @@ the MNI152 template, a NIH chest X-ray); see `examples/get_sample_data.sh`. On t
 text prompts agree with TotalSegmentator at Dice 0.94 (liver), 0.91 (spleen, left kidney), 0.89
 (right kidney, L1) and 0.81 (aorta).
 
+## Plug in your own
+
+Everything is extensible from the workspace, without forking:
+
+```bash
+open-med-mcp new plugin lesion-count     # omm_plugins/lesion_count.py: register(server) + your @server.tool()s
+open-med-mcp new model my-unet           # omm_models/my-unet/: manifest + run.py + Dockerfile (job contract)
+open-med-mcp new model synthseg --wrapped-image freesurfer/synthseg   # manifest only, drives the official image
+open-med-mcp new guideline my-protocol   # omm_guidelines/my-protocol.md
+open-med-mcp plugins list                # what loads, and why something did not
+```
+
+Plug-in tools use `open_med_mcp.plugin_api` (path resolution, cached image loading, previews,
+result packaging) and appear next to the built-in tools; packaged plug-ins register through the
+`open_med_mcp.plugins` entry point. See [docs/plugins.md](docs/plugins.md) and `examples/plugins/`.
+
+## Running reliably in any MCP client
+
+* **stdio hygiene** - the server never writes to stdout; logs go to stderr and `$OMM_HOME/logs/server.log`.
+* **Long runs** - model tools stream MCP progress notifications; pass `wait=false` to get a job id
+  immediately and poll `get_job` (results, previews and logs are also on disk under `omm_outputs/`).
+* **Concurrency** - tools run in worker threads; rendering, caches and provenance are lock-protected.
+* **Payload limits** - inline previews are capped (`OMM_MAX_IMAGE_BYTES`, default 1.5 MB) and can be
+  switched off for text-only clients (`OMM_RETURN_IMAGES=0`); every result also names the saved file.
+* **Transports** - `open-med-mcp serve` (stdio), `--transport streamable-http` / `sse` for remote
+  agents; over HTTP file access is confined to the workspace by default.
+* **Errors** - every tool returns a readable `is_error` result instead of crashing the session.
+* **Schemas** - every parameter is typed and described; the test-suite validates all tool schemas.
+
 ## Configuration
 
 | variable | default | meaning |
@@ -167,7 +196,12 @@ text prompts agree with TotalSegmentator at Dice 0.94 (liver), 0.91 (spleen, lef
 | `OMM_ZOO_<ADAPTER>_PYTHON` | current interpreter | interpreter of a dedicated venv for a local adapter (e.g. `OMM_ZOO_SAM2_PYTHON`) |
 | `OMM_MODEL_DIRS`, `OMM_GUIDELINE_DIRS` | - | extra adapters / guidelines (`:`-separated) |
 | `OMM_IMAGE_PREFIX` | `ghcr.io/d0ng231/open-med-mcp` | registry prefix for container images |
-| `OMM_ALLOW_OUTSIDE_WORKSPACE` | `true` | set `false` to confine file access to the workspace |
+| `OMM_ALLOW_OUTSIDE_WORKSPACE` | `true` (stdio) / `false` (HTTP) | confine file access to the workspace |
+| `OMM_PLUGIN_DIRS` | - | extra plug-in directories (`:`-separated) |
+| `OMM_RETURN_IMAGES` | `true` | inline preview images in results |
+| `OMM_MAX_IMAGE_BYTES` | `1500000` | cap for one inline image |
+| `OMM_LOG_LEVEL`, `OMM_LOG_FILE` | `INFO`, `$OMM_HOME/logs/server.log` | logging |
+| `OMM_CACHE_MB` | `1500` | in-memory image cache budget |
 
 ## HPC / SLURM
 
@@ -187,6 +221,7 @@ a GPU node with the local backend. See [docs/hpc.md](docs/hpc.md).
 * [Guidelines](docs/guidelines.md)
 * [Viewer](docs/viewer.md)
 * [HPC](docs/hpc.md)
+* [Plug-ins](docs/plugins.md) - tools, models, guidelines, renderers
 * [Examples](examples/)
 
 ## Development

@@ -13,6 +13,7 @@ from open_med_mcp.config import get_settings
 from open_med_mcp.core.image import Plane
 from open_med_mcp.core.prompts import Prompt
 from open_med_mcp.tools._common import (
+    Window,
     labels_for,
     load_image_cached,
     load_mask_cached,
@@ -78,7 +79,7 @@ def register(server: MCPServer) -> None:
             int, Field(ge=1, le=36, description="montage: number of slices spread over the mask extent")
         ] = 9,
         window: Annotated[
-            Any,
+            Window,
             Field(
                 description="Preset (soft-tissue, lung, bone, brain, liver ...), {center,width}, [lower, upper] or 'auto'"
             ),
@@ -150,7 +151,7 @@ def register(server: MCPServer) -> None:
             Field(description="HTML file to write (default omm_outputs/views/<image>_viewer.html)"),
         ] = None,
         plane: Plane = "axial",
-        window: Any = None,
+        window: Window = None,
         alpha: float = 0.4,
         title: str | None = None,
     ) -> dict[str, Any]:

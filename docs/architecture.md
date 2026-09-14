@@ -9,10 +9,11 @@ server and the models.
 
 | layer | module | responsibility |
 |---|---|---|
-| **server / tools** | `open_med_mcp.server`, `open_med_mcp.tools.*` | MCP surface: 31 tools, guideline prompts, `guideline://`, `model://`, `omm://conventions` resources. Tools are thin: resolve paths, call core functions, package JSON + preview images into a `CallToolResult`. |
+| **server / tools** | `open_med_mcp.server`, `open_med_mcp.tools.*` | MCP surface: 34 tools, guideline prompts, `guideline://`, `model://`, `omm://conventions` resources. Tools are thin: resolve paths, call core functions, package JSON + preview images into a `CallToolResult`. |
 | **core** | `open_med_mcp.core.*` | `MedicalImage` (SimpleITK/Pillow I/O, ITK geometry, plane <-> axis mapping), windowing, masks (stats, post-processing, prompt extraction), metrics, prompts, and processing (resampling, re-orientation, cropping, N4, registration, mask algebra, shape features, meshes, DICOM series). Pure functions; no MCP. |
 | **models** | `open_med_mcp.models.*` + `open_med_mcp.zoo/*` | Manifests (YAML), registry (bundled + user dirs), weights, the job contract, three runners (local / Docker / Apptainer), wrapped third-party images, Dockerfile -> Apptainer conversion, and the adapters themselves. |
 | **guidelines** | `open_med_mcp.guidelines.*` | Markdown + YAML front matter protocols, preset + user libraries, search. |
+| **plug-ins** | `open_med_mcp.plugins`, `open_med_mcp.plugin_api`, `open_med_mcp.scaffold` | Drop-in tool modules and entry points, the stable helper API for them, and scaffolding for models / plug-ins / guidelines. |
 | **viewer** | `open_med_mcp.viewer.*` | `ViewSpec` (declarative), `display_slice` (native <-> screen mapping), PNG renderer (matplotlib), HTML slice viewer (Jinja2), reports, NiiVue page, renderer registry with entry points. |
 
 ## Data flow of a `segment` call
@@ -45,6 +46,7 @@ server and the models.
 * **Previews are part of results.** Every segmentation returns an image content block; agents that
   can see images (Claude, Codex) QC their own work without an extra call.
 * **Guidelines are data.** Protocols are Markdown files, versioned in git, overridable per workspace.
+* **Long runs never hang a client.** Model tools send progress notifications while a subprocess runs and can hand the run to a background job (`wait=false`); the job is also fully described on disk.
 * **Provenance by default.** Every run directory is self-describing; reports quote it.
 
 ## Repository layout

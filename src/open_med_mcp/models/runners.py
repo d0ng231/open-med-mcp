@@ -19,16 +19,27 @@ from open_med_mcp.models.manifest import ModelManifest
 SDK_DIR = Path(__file__).resolve().parent.parent / "zoo" / "_sdk"
 
 
+_GPU_CACHE: dict[str, tuple[float, bool]] = {}
+_IMPORT_CACHE: dict[tuple[str, tuple[str, ...]], tuple[float, str]] = {}
+_CACHE_TTL = 300.0
+
+
 def host_has_gpu() -> bool:
+    """``nvidia-smi`` says a GPU is visible (cached for a few minutes; probing costs seconds)."""
     if os.environ.get("OMM_DEVICE", "").lower() in ("none", "cpu"):
         return False
     if shutil.which("nvidia-smi") is None:
         return False
+    hit = _GPU_CACHE.get("gpu")
+    if hit and time.time() - hit[0] < _CACHE_TTL:
+        return hit[1]
     try:
         r = subprocess.run(["nvidia-smi", "-L"], capture_output=True, text=True, timeout=10)
-        return r.returncode == 0 and "GPU" in r.stdout
+        ok = r.returncode == 0 and "GPU" in r.stdout
     except Exception:
-        return False
+        ok = False
+    _GPU_CACHE["gpu"] = (time.time(), ok)
+    return ok
 
 
 def resolve_device(settings: Settings | None = None) -> str:
@@ -123,6 +134,10 @@ class LocalRunner(Runner):
         py = self.python_for(manifest)
         if not manifest.local.requires:
             return True, f"python={py}"
+        key = (py, tuple(manifest.local.requires))
+        hit = _IMPORT_CACHE.get(key)
+        if hit and time.time() - hit[0] < _CACHE_TTL:
+            return True, hit[1]
         code = "import importlib,sys\n" + "\n".join(
             f"importlib.import_module({m!r})" for m in manifest.local.requires
         )
@@ -138,6 +153,7 @@ class LocalRunner(Runner):
                 else ""
             )
             return False, f"{missing}{hint}"
+        _IMPORT_CACHE[key] = (time.time(), f"python={py}")
         return True, f"python={py}"
 
     def command(self, manifest: ModelManifest, job_dir: Path, weights_dir: Path, device: str) -> list[str]:

@@ -46,6 +46,7 @@ in tool calls resolve against it, outputs go to `<workspace>/omm_outputs/`).
 
 **Claude Code**
 ```bash
+open-med-mcp install claude-code --workspace /data/study01     # runs the command below for you
 claude mcp add open-med-mcp -e OMM_WORKSPACE=/data/study01 -- open-med-mcp serve
 ```
 or in `.mcp.json` at the project root:
@@ -55,6 +56,7 @@ or in `.mcp.json` at the project root:
 
 **Codex CLI**
 ```bash
+open-med-mcp install codex --workspace /data/study01
 codex mcp add open-med-mcp --env OMM_WORKSPACE=/data/study01 -- open-med-mcp serve
 ```
 or `~/.codex/config.toml`:
@@ -66,6 +68,10 @@ args = ["serve"]
 OMM_WORKSPACE = "/data/study01"
 ```
 
+Codex runs tools annotated as read-only (inspect, list, stats, render ...) without asking; tools that
+write files (`segment`, `run_model`, ...) need an approval, so non-interactive runs should use
+`codex exec --full-auto` (workspace-write sandbox) or approve the calls in the TUI.
+
 **Claude Desktop** (`claude_desktop_config.json`), **Cursor** (`.cursor/mcp.json`), **Gemini CLI**:
 `open-med-mcp client-config claude-desktop` prints the JSON with absolute paths.
 
@@ -73,6 +79,10 @@ OMM_WORKSPACE = "/data/study01"
 ```bash
 open-med-mcp serve --transport streamable-http --host 127.0.0.1 --port 8765 --workspace /data/study01
 ```
+
+Long model runs: tools stream progress; if your client enforces a short tool timeout, call
+`run_model`/`segment` with `wait=false` and poll `get_job`. Text-only clients: set
+`OMM_RETURN_IMAGES=0` (results still name the saved PNGs). Logs: `$OMM_HOME/logs/server.log`.
 
 ## First conversation
 

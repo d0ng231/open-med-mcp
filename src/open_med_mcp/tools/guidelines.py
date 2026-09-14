@@ -13,6 +13,7 @@ from pydantic import Field
 from open_med_mcp.config import get_settings
 from open_med_mcp.guidelines.loader import get_library
 from open_med_mcp.models.registry import get_registry
+from open_med_mcp.tools._common import tool_errors
 
 READ_ONLY = ToolAnnotations(read_only_hint=True, open_world_hint=False)
 CONVENTIONS = Path(__file__).resolve().parent.parent / "conventions.md"
@@ -30,6 +31,7 @@ def register(server: MCPServer) -> None:
         return {"guidelines": [g.summary_dict() for g in lib.search(query, tags, modality)]}
 
     @server.tool(annotations=READ_ONLY)
+    @tool_errors
     def get_guideline(name: Annotated[str, Field(description="Guideline name from list_guidelines")]) -> str:
         """Return the full Markdown text of a guideline. Follow it step by step and report deviations."""
         lib = get_library(get_settings(), reload=True)

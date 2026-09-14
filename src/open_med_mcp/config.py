@@ -67,6 +67,23 @@ class Settings:
     auto_download_weights: bool = field(default_factory=lambda: _env_bool("OMM_AUTO_DOWNLOAD", True))
     #: Maximum edge length (pixels) of preview images returned to the agent.
     preview_max_px: int = field(default_factory=lambda: int(os.environ.get("OMM_PREVIEW_MAX_PX", "900")))
+    #: Return inline images in tool results (set to false for text-only clients; files are still written).
+    return_images: bool = field(default_factory=lambda: _env_bool("OMM_RETURN_IMAGES", True))
+    #: Hard cap on the size of one inline image (bytes); larger renders are downscaled.
+    max_image_bytes: int = field(
+        default_factory=lambda: int(os.environ.get("OMM_MAX_IMAGE_BYTES", str(1_500_000)))
+    )
+    #: Budget of the in-memory image cache (MB).
+    cache_mb: int = field(default_factory=lambda: int(os.environ.get("OMM_CACHE_MB", "1500")))
+    #: Extra directories with plug-in modules (``*.py`` files exposing ``register(server)``).
+    extra_plugin_dirs: list[Path] = field(
+        default_factory=lambda: [
+            Path(p).expanduser() for p in os.environ.get("OMM_PLUGIN_DIRS", "").split(os.pathsep) if p
+        ]
+    )
+    #: Logging: level and optional file (default ``<home>/logs/server.log``; empty string disables the file).
+    log_level: str = field(default_factory=lambda: os.environ.get("OMM_LOG_LEVEL", "INFO").upper())
+    log_file: str | None = field(default_factory=lambda: os.environ.get("OMM_LOG_FILE"))
 
     # ------------------------------------------------------------------ paths
     @property
@@ -82,8 +99,12 @@ class Settings:
         """Where Apptainer/Singularity ``.sif`` images are cached."""
         return self.home / "images"
 
+    @property
+    def logs_dir(self) -> Path:
+        return self.home / "logs"
+
     def ensure_dirs(self) -> None:
-        for d in (self.home, self.weights_dir, self.images_dir):
+        for d in (self.home, self.weights_dir, self.images_dir, self.logs_dir):
             d.mkdir(parents=True, exist_ok=True)
 
     def local_python_for(self, adapter: str) -> str | None:

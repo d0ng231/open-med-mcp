@@ -64,12 +64,24 @@ def serve(
     workspace: Optional[Path] = typer.Option(
         None, help="Workspace root (default: current directory or $OMM_WORKSPACE)"
     ),
+    log_level: Optional[str] = typer.Option(
+        None, help="DEBUG | INFO | WARNING | ERROR (default $OMM_LOG_LEVEL or INFO)"
+    ),
+    no_plugins: bool = typer.Option(False, help="Do not load plug-ins"),
 ) -> None:
-    """Start the MCP server (stdio by default - this is what Claude Code / Codex / Claude Desktop launch)."""
+    """Start the MCP server (stdio by default - this is what Claude Code / Codex / Claude Desktop launch).
+
+    Nothing is ever written to stdout except the MCP stream; logs go to stderr and
+    $OMM_HOME/logs/server.log. Over HTTP/SSE, file access is confined to the workspace unless
+    OMM_ALLOW_OUTSIDE_WORKSPACE=1 is set explicitly."""
     from open_med_mcp.server import create_server
 
+    if log_level:
+        os.environ["OMM_LOG_LEVEL"] = log_level.upper()
+    if transport != "stdio" and "OMM_ALLOW_OUTSIDE_WORKSPACE" not in os.environ:
+        os.environ["OMM_ALLOW_OUTSIDE_WORKSPACE"] = "0"
     settings = _settings(workspace)
-    server = create_server(settings)
+    server = create_server(settings, plugins=not no_plugins)
     if transport == "stdio":
         server.run(transport="stdio")
     else:
@@ -366,6 +378,127 @@ def guidelines_show(name: str) -> None:
     from open_med_mcp.guidelines.loader import get_library
 
     typer.echo(get_library(_settings(), reload=True).get(name).render())
+
+
+plugins_app = typer.Typer(
+    help="Plug-ins (workspace omm_plugins/, OMM_PLUGIN_DIRS, entry points)", no_args_is_help=True
+)
+app.add_typer(plugins_app, name="plugins")
+new_app = typer.Typer(help="Scaffold a new model adapter, tool plug-in or guideline", no_args_is_help=True)
+app.add_typer(new_app, name="new")
+
+
+@plugins_app.command("list")
+def plugins_list(workspace: Optional[Path] = typer.Option(None)) -> None:
+    """Load plug-ins the way the server does and report what they add."""
+    from open_med_mcp.server import create_server
+
+    s = _settings(workspace)
+    create_server(s)
+    from open_med_mcp.plugins import loaded_plugins, plugin_dirs
+
+    rprint("plug-in dirs:", ", ".join(str(d) for d in plugin_dirs(s)))
+    table = Table()
+    for col in ("name", "kind", "tools", "source", "error"):
+        table.add_column(col)
+    for p in loaded_plugins():
+        table.add_row(p.name, p.kind, ", ".join(p.tools_added), p.source, p.error or "")
+    console.print(table)
+
+
+@new_app.command("model")
+def new_model_cmd(
+    name: str,
+    directory: Optional[Path] = typer.Option(
+        None, "--dir", help="Parent directory (default: <workspace>/omm_models)"
+    ),
+    wrapped_image: Optional[str] = typer.Option(
+        None, "--wrapped-image", help="Wrap an existing container image instead of writing run.py"
+    ),
+) -> None:
+    """Create a model adapter folder from the template (manifest, run.py, Dockerfile, README)."""
+    from open_med_mcp.scaffold import new_model
+
+    s = _settings()
+    dest = new_model(directory or (s.workspace / "omm_models"), name, wrapped_image)
+    rprint(
+        f"[green]created[/green] {dest}\nnext: edit {dest / (name + '.yaml')}, then `open-med-mcp models check {name}` and `open-med-mcp run {name} --image ...`"
+    )
+
+
+@new_app.command("plugin")
+def new_plugin_cmd(
+    name: str,
+    directory: Optional[Path] = typer.Option(None, "--dir", help="Default: <workspace>/omm_plugins"),
+) -> None:
+    """Create a tool plug-in file (register(server) with an example tool)."""
+    from open_med_mcp.scaffold import new_plugin
+
+    s = _settings()
+    dest = new_plugin(directory or (s.workspace / "omm_plugins"), name)
+    rprint(
+        f"[green]created[/green] {dest}\nrestart the server (or run `open-med-mcp plugins list`) to load it"
+    )
+
+
+@new_app.command("guideline")
+def new_guideline_cmd(
+    name: str,
+    title: Optional[str] = typer.Option(None),
+    directory: Optional[Path] = typer.Option(None, "--dir", help="Default: <workspace>/omm_guidelines"),
+) -> None:
+    """Create a guideline skeleton (Markdown with YAML front matter)."""
+    from open_med_mcp.scaffold import new_guideline
+
+    s = _settings()
+    dest = new_guideline(directory or (s.workspace / "omm_guidelines"), name, title)
+    rprint(f"[green]created[/green] {dest}")
+
+
+@app.command()
+def install(
+    client: str = typer.Argument("claude-code", help="claude-code | codex"),
+    workspace: Optional[Path] = typer.Option(None),
+    scope: str = typer.Option("local", help="claude-code: local | project | user"),
+    dry_run: bool = typer.Option(False, help="Only print the command"),
+) -> None:
+    """Register this server with a client CLI (runs `claude mcp add` / `codex mcp add`)."""
+    exe = shutil.which("open-med-mcp") or f"{sys.executable} -m open_med_mcp"
+    ws = str((workspace or Path.cwd()).resolve())
+    if client == "claude-code":
+        cmd = [
+            "claude",
+            "mcp",
+            "add",
+            "--scope",
+            scope,
+            "open-med-mcp",
+            "-e",
+            f"OMM_WORKSPACE={ws}",
+            "--",
+            *exe.split(),
+            "serve",
+        ]
+    elif client == "codex":
+        cmd = [
+            "codex",
+            "mcp",
+            "add",
+            "open-med-mcp",
+            "--env",
+            f"OMM_WORKSPACE={ws}",
+            "--",
+            *exe.split(),
+            "serve",
+        ]
+    else:
+        raise typer.BadParameter("client must be claude-code or codex (use client-config for others)")
+    rprint("[dim]$ " + " ".join(cmd) + "[/dim]")
+    if dry_run:
+        return
+    if shutil.which(cmd[0]) is None:
+        raise typer.BadParameter(f"{cmd[0]} is not installed or not on PATH")
+    raise typer.Exit(subprocess.call(cmd))
 
 
 @app.command("client-config")

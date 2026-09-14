@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import io
+import threading
 from typing import Any
 
 import matplotlib
@@ -24,6 +25,9 @@ from open_med_mcp.viewer.slicing import (  # noqa: E402
     mask_centroid_xyz,
 )
 from open_med_mcp.viewer.spec import PALETTE, MaskLayer, ViewSpec  # noqa: E402
+
+#: matplotlib is not thread-safe; every figure is built under this lock (tools run in worker threads).
+RENDER_LOCK = threading.Lock()
 
 MaskItem = tuple[MedicalImage, dict[str, Any]]  # (mask image, {"layer": MaskLayer, "labels": {id: name}})
 
@@ -215,6 +219,10 @@ class PngRenderer:
     name = "png"
 
     def render(self, image: MedicalImage, masks: list[MaskItem], spec: ViewSpec) -> RenderResult:
+        with RENDER_LOCK:
+            return self._render(image, masks, spec)
+
+    def _render(self, image: MedicalImage, masks: list[MaskItem], spec: ViewSpec) -> RenderResult:
         modality = image.modality_guess()
         if image.is_rgb:
             windowed, wlabel = image.array, "rgb"
