@@ -70,7 +70,7 @@ OMM_WORKSPACE = "/data/study01"
 
 Codex runs tools annotated as read-only (inspect, list, stats, render ...) without asking; tools that
 write files (`segment`, `run_model`, ...) need an approval, so non-interactive runs should use
-`codex exec --full-auto` (workspace-write sandbox) or approve the calls in the TUI.
+`codex exec --approve-for-me` (automatic review, workspace-write sandbox) or approve the calls in the TUI.
 
 **Claude Desktop** (`claude_desktop_config.json`), **Cursor** (`.cursor/mcp.json`), **Gemini CLI**:
 `open-med-mcp client-config claude-desktop` prints the JSON with absolute paths.
