@@ -14,6 +14,7 @@ import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 from matplotlib import patches  # noqa: E402
 from matplotlib.patches import FancyBboxPatch  # noqa: E402
+from matplotlib.path import Path as MplPath  # noqa: E402
 
 HERE = Path(__file__).resolve().parent
 INK = "#0f172a"
@@ -23,73 +24,136 @@ SKY = "#38bdf8"
 PAPER = "#f8fafc"
 
 
-def logo(ax: plt.Axes, with_text: bool = False) -> None:
+NAVY = "#0f172a"
+NAVY_LIGHT = "#1e2a47"
+RING = "#2c3a57"
+TEAL = "#2dd4bf"
+CORAL = "#ff6b6b"
+MINT = "#a3ff6b"
+
+
+def _catmull_rom_path(points, tension=0.0):
+    """Closed, smooth Bezier path through ``points`` (Catmull-Rom converted to cubic Beziers)."""
+    n = len(points)
+    verts = [points[0]]
+    codes = [MplPath.MOVETO]
+    k = (1 - tension) / 6.0
+    for i in range(n):
+        p0, p1, p2, p3 = (points[(i - 1) % n], points[i], points[(i + 1) % n], points[(i + 2) % n])
+        c1 = (p1[0] + k * (p2[0] - p0[0]), p1[1] + k * (p2[1] - p0[1]))
+        c2 = (p2[0] - k * (p3[0] - p1[0]), p2[1] - k * (p3[1] - p1[1]))
+        verts += [c1, c2, p2]
+        codes += [MplPath.CURVE4] * 3
+    verts.append(points[0])
+    codes.append(MplPath.CLOSEPOLY)
+    return MplPath(verts, codes)
+
+
+ORGAN = [(58, 71), (69, 66), (75, 55), (72, 43), (63, 34), (52, 33), (43, 40), (44, 50), (41, 60), (47, 69)]
+
+
+def logo_mark(ax, tile=True):
+    """The square mark in a 100 x 100 coordinate system."""
     ax.set_aspect("equal")
     ax.axis("off")
-    ax.set_xlim(-1.25, 1.25 if not with_text else 4.9)
-    ax.set_ylim(-1.25, 1.25)
-    # rounded tile
-    tile = FancyBboxPatch(
-        (-1.1, -1.1), 2.2, 2.2, boxstyle="round,pad=0,rounding_size=0.42", fc=INK, ec="none"
-    )
-    ax.add_patch(tile)
-    # "slice": a soft ellipse like an axial section
-    t = np.linspace(0, 2 * np.pi, 200)
-    ax.fill(0.78 * np.cos(t), 0.62 * np.sin(t) - 0.05, color="#1e293b", zorder=2)
-    ax.plot(0.78 * np.cos(t), 0.62 * np.sin(t) - 0.05, color="#334155", lw=2, zorder=3)
-    # segmentation contour (organ-like blob) with a filled semi-transparent region
-    tt = np.linspace(0, 2 * np.pi, 300)
-    r = 0.36 + 0.06 * np.sin(3 * tt) + 0.03 * np.cos(5 * tt)
-    bx, by = 0.16 + r * np.cos(tt) * 1.1, -0.02 + r * np.sin(tt)
-    ax.fill(bx, by, color=CORAL, alpha=0.45, zorder=4)
-    ax.plot(bx, by, color=CORAL, lw=3.2, zorder=5, solid_capstyle="round")
-    # prompt box (dashed) and a point prompt
+    ax.set_xlim(0, 100)
+    ax.set_ylim(0, 100)
+    if tile:
+        bg = FancyBboxPatch(
+            (0, 0), 100, 100, boxstyle="round,pad=0,rounding_size=22", fc=NAVY, ec="none", zorder=0
+        )
+        ax.add_patch(bg)
+        yy, xx = np.mgrid[0:100:200j, 0:100:200j]
+        glow = np.exp(-(((xx - 55) ** 2 + (yy - 55) ** 2) / (2 * 34**2)))
+        cmap = matplotlib.colors.LinearSegmentedColormap.from_list("g", [NAVY, NAVY_LIGHT])
+        im = ax.imshow(
+            glow,
+            extent=(0, 100, 0, 100),
+            origin="lower",
+            cmap=cmap,
+            vmin=0,
+            vmax=1,
+            zorder=1,
+            interpolation="bilinear",
+        )
+        im.set_clip_path(bg)
+    ax.add_patch(patches.Circle((50, 51), 31, fill=False, ec=RING, lw=5.5, zorder=2))
     ax.add_patch(
-        patches.Rectangle(
-            (-0.35, -0.5), 1.0, 0.95, fill=False, ec=SKY, lw=2.4, ls=(0, (4, 3)), zorder=6, joinstyle="round"
+        patches.Arc((50, 51), 62, 62, theta1=215, theta2=350, ec=TEAL, lw=5.5, capstyle="round", zorder=3)
+    )
+    path = _catmull_rom_path(ORGAN)
+    ax.add_patch(patches.PathPatch(path, fc=CORAL, ec="none", zorder=4))
+    ax.add_patch(patches.PathPatch(path, fc="none", ec="white", lw=2.6, joinstyle="round", zorder=5))
+    for x, y in ORGAN[::2]:
+        ax.add_patch(patches.Circle((x, y), 2.1, fc="white", ec=NAVY, lw=0.9, zorder=6))
+    hub = (23.5, 51)
+    for node in ((10, 36), (10, 66)):
+        ax.plot([node[0], hub[0]], [node[1], hub[1]], color=TEAL, lw=3.2, solid_capstyle="round", zorder=3)
+        ax.add_patch(patches.Circle(node, 3.3, fc=TEAL, ec=NAVY, lw=1.2, zorder=7))
+    ax.add_patch(patches.Circle(hub, 4.0, fc="white", ec=TEAL, lw=2.4, zorder=8))
+    ax.plot([57], [52], marker="+", ms=11, mew=2.8, color=MINT, zorder=9)
+
+
+def save_logo():
+    fig, ax = plt.subplots(figsize=(4, 4), dpi=256)
+    fig.patch.set_alpha(0)
+    fig.subplots_adjust(0, 0, 1, 1)
+    logo_mark(ax)
+    fig.savefig(HERE / "logo.png", transparent=True)
+    fig.savefig(HERE / "logo.svg", transparent=True)
+    plt.close(fig)
+    fig = plt.figure(figsize=(12.0, 3.6), dpi=200)
+    fig.patch.set_alpha(0)
+    ax = fig.add_axes((0, 0, 1, 1))
+    ax.set_xlim(0, 120)
+    ax.set_ylim(0, 36)
+    ax.axis("off")
+    ax.add_patch(
+        FancyBboxPatch(
+            (0.5, 0.5),
+            119,
+            35,
+            boxstyle="round,pad=0,rounding_size=6",
+            fc=NAVY,
+            ec="#26324d",
+            lw=1.2,
+            zorder=0,
         )
     )
-    ax.plot([0.16], [-0.02], marker="+", ms=13, mew=3.2, color="#a3ff6b", zorder=7)
-    # MCP-style connection nodes on the left edge
-    for (x, y), c in (((-0.86, 0.55), TEAL), ((-0.86, 0.0), TEAL), ((-0.86, -0.55), TEAL)):
-        ax.plot([x, -0.5], [y, 0.0], color=TEAL, lw=2.2, alpha=0.9, zorder=3)
-        ax.plot([x], [y], marker="o", ms=9, color=c, mec=INK, mew=1.5, zorder=8)
-    ax.plot([-0.5], [0.0], marker="o", ms=10, color=PAPER, mec=INK, mew=1.5, zorder=8)
-    if with_text:
-        ax.text(
-            1.45,
-            0.33,
-            "open-med-mcp",
-            fontsize=44,
-            fontweight="bold",
-            color=INK,
-            va="center",
-            ha="left",
-            family="DejaVu Sans",
-        )
-        ax.text(
-            1.47,
-            -0.33,
-            "medical image analysis tools for AI agents",
-            fontsize=17,
-            color="#475569",
-            va="center",
-            ha="left",
-            family="DejaVu Sans",
-        )
-
-
-def save_logo() -> None:
-    fig, ax = plt.subplots(figsize=(4, 4), dpi=128)
-    fig.patch.set_alpha(0)
-    logo(ax)
-    fig.savefig(HERE / "logo.png", transparent=True, bbox_inches="tight", pad_inches=0.02)
-    fig.savefig(HERE / "logo.svg", transparent=True, bbox_inches="tight", pad_inches=0.02)
-    plt.close(fig)
-    fig, ax = plt.subplots(figsize=(12.3, 5), dpi=128)
-    fig.patch.set_alpha(0)
-    logo(ax, with_text=True)
-    fig.savefig(HERE / "banner.png", transparent=True, bbox_inches="tight", pad_inches=0.05)
+    mark_ax = fig.add_axes((0.035, 0.12, 0.23, 0.76))
+    logo_mark(mark_ax, tile=False)
+    ax.text(
+        34,
+        22.6,
+        "open-med-mcp",
+        fontsize=44,
+        fontweight="bold",
+        color="white",
+        va="center",
+        ha="left",
+        family="DejaVu Sans",
+    )
+    ax.text(
+        34.3,
+        12.8,
+        "medical image analysis tools for AI agents",
+        fontsize=17,
+        color="#a9b4c8",
+        va="center",
+        ha="left",
+        family="DejaVu Sans",
+    )
+    ax.text(
+        34.3,
+        6.8,
+        "MedSAM2 · VoxTell · TotalSegmentator · nnU-Net · MONAI · HD-BET · SynthStrip · TorchXRayVision",
+        fontsize=10.5,
+        color="#6d7a94",
+        va="center",
+        ha="left",
+        family="DejaVu Sans",
+    )
+    fig.savefig(HERE / "banner.png", transparent=True)
     plt.close(fig)
 
 
