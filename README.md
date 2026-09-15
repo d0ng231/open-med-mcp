@@ -12,10 +12,10 @@
 </p>
 
 <p align="center">
-  <img src="docs/assets/demo.gif" alt="open-med-mcp agent session: inspect a chest CT, segment bone, measure it (RECIST), and classify a chest X-ray" width="900">
+  <img src="docs/assets/demo.gif" alt="open-med-mcp agent session: inspect a chest CT, threshold-segment bone, render an axial overlay, and classify a chest X-ray" width="900">
 </p>
 
-<p align="center"><em>A real captured Claude Code session driving open-med-mcp: inspect a chest CT, threshold-segment the bone, measure it (RECIST 1.1), and read a chest X-ray. Every number and image above is genuine tool output.</em></p>
+<p align="center"><em>A real Claude Code session driving open-med-mcp, recorded live in the terminal: inspect a chest CT, threshold-segment the bones by Hounsfield units, render an axial slice with the mask overlaid, and read a chest X-ray. Every number, path and result is genuine tool output.</em></p>
 
 **open-med-mcp** is an open, modular [Model Context Protocol](https://modelcontextprotocol.io) server
 that lets AI coding agents (Claude Code, Codex CLI, Claude Desktop, Cursor, ...) do **end-to-end
