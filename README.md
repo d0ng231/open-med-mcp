@@ -12,28 +12,27 @@
 </p>
 
 <p align="center">
-  <img src="docs/assets/demo.gif" alt="open-med-mcp: a live Claude Code session with a viewer window that pops out to show real renders — chest CT three-plane and bone montage, chest X-ray multi-organ overlay, and brain MRI" width="900">
+  <img src="docs/assets/demo.gif" alt="open-med-mcp demo: a Claude Code session segmenting, classifying and rendering across CT, X-ray and MRI, with results shown live in the viewer" width="900">
 </p>
 
-<p align="center"><em>A real Claude Code session driving open-med-mcp, recorded live — the terminal on the left, the viewer window popping out on the right to show each render the moment its tool produces it. Three worked examples: a <b>chest CT</b> (three-plane view + a Hounsfield bone montage), a <b>chest X-ray</b> (multi-organ segmentation + finding classification), and a <b>brain MRI</b>. Every number, path and image is genuine tool output.</em></p>
+<p align="center"><em>A Claude Code session driving OMM — chest CT, chest X-ray and brain MRI, with renders appearing live in the viewer.</em></p>
 
-**open-med-mcp** — **OMM** (Open Medical MCP; hence the `OMM_*` settings) — is an open, modular
-[Model Context Protocol](https://modelcontextprotocol.io) server that lets AI coding agents (Claude
-Code, Codex CLI, Claude Desktop, Cursor, ...) do **end-to-end medical image analysis** on your
-machine: inspect a CT/MRI/X-ray, pick a protocol, run a segmentation model, *look* at the result,
-refine it, measure it, and write a report.
+**open-med-mcp** (OMM) is a [Model Context Protocol](https://modelcontextprotocol.io) server for
+medical image analysis. It gives AI coding agents (Claude Code, Codex CLI, Claude Desktop, Cursor,
+...) tools to inspect a CT/MRI/X-ray, run segmentation and other models, view and measure the
+result, and write a report — all on your own machine.
 
-It goes beyond segmentation - classification, detection, vision-language questions, radiomics, and
-computable clinical criteria (RECIST 1.1, Fleischner, Lung-RADS, LI-RADS, TI-RADS, Agatston) with
-the matching guidelines - and is built on three pillars:
+Beyond segmentation it covers classification, detection, vision-language questions, radiomics, and
+computable clinical criteria (RECIST 1.1, Fleischner, Lung-RADS, LI-RADS, TI-RADS, Agatston). Three
+pillars:
 
 | pillar | what it means |
 |---|---|
 | **1. Containerized specialised models** | Every model is an *adapter* with a manifest, a `run.py` and a Dockerfile, speaking one tiny job-directory contract. Run it locally (pip extra), in Docker (GHCR images) or in Apptainer on an HPC cluster - the agent does not care which. Ships with **MedSAM2**, **SAM 2.1**, **VoxTell** (free-text prompts), **TotalSegmentator**, **lungmask**, **HD-BET**, **SynthStrip** (official FreeSurfer image), **nnU-Net** (any trained model), **MONAI Model Zoo bundles**, **TorchXRayVision** and a classical baseline; adding your own model is a folder with three files, and existing third-party images can be wrapped with a command template. |
 | **2. Preset / custom guidelines** | Markdown protocols with YAML front matter that tell an agent *how* to do a task well (which model, which window, what to check, what to report). Presets ship with the package; drop your own into a folder to override or extend them. They are exposed as MCP prompts and resources. |
-| **3. Modular, code-customizable viewer** | Agents see: `render_view` returns PNGs (single slice, three planes, montage) with native voxel coordinate grids so prompts can be read off the picture. Humans see: a self-contained, **interactive** HTML viewer (cine through slices, toggle the overlay, zoom, click/drag to get point/box prompts with a millimetre size), Markdown/HTML reports and an optional NiiVue 3D page. Renderers are pluggable. |
+| **3. Modular, code-customizable viewer** | For the agent, `render_view` returns PNGs (single slice, three planes, montage) with native-voxel coordinate grids. For you, `export_viewer` writes a self-contained interactive HTML viewer (cine, overlay toggle, zoom, click/drag for point/box prompts), plus Markdown/HTML reports and a NiiVue 3D page. Renderers are pluggable. |
 
-Everything is local. Images never leave the machine.
+Images never leave the machine.
 
 <p align="center">
   <img src="docs/assets/architecture.png" alt="architecture" width="900">
@@ -80,7 +79,7 @@ write_report("Liver volumetry", sections=[...])
 
 <p align="center">
   <img src="docs/assets/screenshots/segment_medsam2_liver.png" alt="MedSAM2 liver segmentation preview returned to the agent" width="860"><br>
-  <em>What the agent sees after <code>segment(...)</code>: three planes, the mask, native-voxel tick labels.</em>
+  <em>What the agent sees after <code>segment(...)</code>.</em>
 </p>
 
 ## Tools
@@ -148,28 +147,22 @@ are also exposed as MCP prompts (`/mcp__open-med-mcp__segmentation-3d-ct` in Cla
 
 ## Viewer
 
-The viewer is **code, not screenshots**. `export_viewer` writes one self-contained HTML file - no
-server, no CDN, no build step - that is genuinely interactive.
-
 <p align="center">
-  <img src="docs/assets/viewer.gif" alt="OMM interactive HTML viewer: cine through slices, toggle the segmentation overlay and its opacity, and click or drag on the image to read a native-voxel point/box prompt with a millimetre measurement" width="900">
+  <img src="docs/assets/viewer.gif" alt="OMM interactive HTML viewer: cine through slices, toggle the overlay, and click or drag for a native-voxel point/box prompt with a millimetre size" width="900">
 </p>
 
-<p align="center"><b>▶ Try it live</b> in your browser (each is one self-contained file, nothing to install):<br>
-<a href="https://htmlpreview.github.io/?https://github.com/d0ng231/open-med-mcp/blob/main/docs/examples/chest-ct-viewer.html">chest CT + bone mask (30 slices)</a> &nbsp;·&nbsp;
-<a href="https://htmlpreview.github.io/?https://github.com/d0ng231/open-med-mcp/blob/main/docs/examples/chest-xray-viewer.html">chest X-ray, multi-organ overlay</a></p>
+<p align="center">Try it live:
+<a href="https://htmlpreview.github.io/?https://github.com/d0ng231/open-med-mcp/blob/main/docs/examples/chest-ct-viewer.html">chest CT + bone mask</a> ·
+<a href="https://htmlpreview.github.io/?https://github.com/d0ng231/open-med-mcp/blob/main/docs/examples/chest-xray-viewer.html">chest X-ray overlay</a></p>
 
-* `render_view(...)` - PNG figures the agent can look at; every panel carries native-voxel tick
-  labels and the result reports which axis is on screen x/y.
-* `export_viewer(...)` - one HTML file, no server, no CDN. **Interactive:** scroll or **cine** through
-  slices, toggle the overlay and its opacity, **invert**, **zoom / pan**, and **click or drag on the
-  image to read a native-voxel point or box prompt** (with a millimetre size) that feeds straight back
-  into `segment` - one button copies the prompt JSON.
-* `open-med-mcp serve-viewer ct.nii.gz -m mask.nii.gz` - interactive 3D (NiiVue) on localhost.
+* `render_view(...)` - PNG figures for the agent, with native-voxel tick labels.
+* `export_viewer(...)` - one self-contained HTML file (no server, no CDN): cine/scroll through slices,
+  toggle the overlay, invert, zoom/pan, and click or drag for a point/box prompt in native
+  coordinates (with a millimetre size) that feeds back into `segment`.
+* `open-med-mcp serve-viewer ct.nii.gz -m mask.nii.gz` - 3D view (NiiVue) on localhost.
 * `write_report(...)` - Markdown + HTML with embedded figures.
-* Custom renderers: implement `render(image, masks, spec)`, register with `@register_renderer` or
-  the `open_med_mcp.renderers` entry point, and pass `renderer="yourname"`. See [docs/viewer.md](docs/viewer.md).
-
+* Custom renderers: implement `render(image, masks, spec)` and register with `@register_renderer`.
+  See [docs/viewer.md](docs/viewer.md).
 
 ## Gallery
 
@@ -183,10 +176,8 @@ server, no CDN, no build step - that is genuinely interactive.
 | **chest X-ray anatomy + `cardiothoracic_ratio(...)`** | **classify + measure + criteria** |
 | ![CXR anatomy](docs/assets/screenshots/cxr_anatomy_ctr.png) | RECIST `measure_lesion`/`recist_response`, Fleischner, TI-RADS, Agatston, `ask_vlm` (MedGemma), `run_model("radiomics", ...)` |
 
-All figures on this page are real outputs of the tools on public sample data (a small abdominal CT,
-the MNI152 template, a NIH chest X-ray); see `examples/get_sample_data.sh`. On that CT, VoxTell's
-text prompts agree with TotalSegmentator at Dice 0.94 (liver), 0.91 (spleen, left kidney), 0.89
-(right kidney, L1) and 0.81 (aorta).
+All figures are real tool outputs on public sample data (abdominal CT, MNI152 template, NIH chest
+X-ray; see `examples/get_sample_data.sh`).
 
 ## Plug in your own
 
@@ -264,9 +255,8 @@ uv venv && uv pip install -e ".[dev]"
 .venv/bin/ruff check src tests && .venv/bin/python -m pytest -q      # CPU-only tests, ~1 min
 ```
 
-The test-suite exercises the whole stack (image I/O, coordinates, processing, registration, viewer,
-job contract incl. wrapped images, MCP server via an in-memory client, CLI) with synthetic data and
-lightweight fake adapters; the real models are verified on GPU/CPU before a release (see [docs/hpc.md](docs/hpc.md)).
+The test-suite covers the whole stack (I/O, coordinates, processing, viewer, job contract, MCP
+server, CLI) with synthetic data; the real models are verified on GPU/CPU before a release.
 
 ## Acknowledgements
 
